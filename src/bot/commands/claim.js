@@ -8,7 +8,7 @@ module.exports = {
     .setDescription('Claim this ticket as the active staff handler'),
 
   async execute(interaction) {
-    const ticket = db.getTicketByChannelId(interaction.channel.id);
+    const ticket = await db.getTicketByChannelId(interaction.channel.id);
     if (!ticket || ticket.status === 'closed') {
       return interaction.reply({
         content: '❌ This channel is not an active ticket.',

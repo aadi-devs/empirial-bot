@@ -4,37 +4,29 @@ let activeStatusFilter = 'all';
 let currentActiveTicketId = null;
 let allTicketsCache = [];
 let socket = null;
+let currentUser = null;
 
-// Helper: Token Management
-function getToken() {
-  return localStorage.getItem('empirial_token');
-}
-
-function setToken(token) {
-  localStorage.setItem('empirial_token', token);
-}
-
-function clearToken() {
-  localStorage.removeItem('empirial_token');
-}
-
-// Authenticated Fetch
+// Authenticated Fetch using Supabase cookie-based session
 async function authFetch(url, options = {}) {
-  const token = getToken();
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {})
   };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
-  const response = await fetch(url, { ...options, headers });
-  if (response.status === 401) {
-    showAuthModal();
+  const response = await fetch(url, { ...options, headers, credentials: 'include' });
+  if (response.status === 401 || response.status === 403) {
+    window.location.href = '/login.html';
     throw new Error('Unauthorized');
   }
   return response;
+}
+
+// Log out user
+async function logout() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch (_) {}
+  window.location.href = '/login.html';
 }
 
 // Toast System
@@ -99,20 +91,6 @@ function switchView(viewName, filter = null) {
       renderAllTicketsTable();
     }
   }
-}
-
-// Auth Modal
-function showAuthModal() {
-  document.getElementById('auth-modal').classList.remove('hidden');
-}
-
-function hideAuthModal() {
-  document.getElementById('auth-modal').classList.add('hidden');
-}
-
-function logout() {
-  clearToken();
-  showAuthModal();
 }
 
 // Initialize Socket.io
@@ -639,45 +617,32 @@ function escapeHtml(str) {
 }
 
 // DOM Ready
-document.addEventListener('DOMContentLoaded', () => {
-  if (!getToken()) {
-    showAuthModal();
-  } else {
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    const data = await res.json();
+    if (!data.authenticated || !data.user || !data.user.isAdmin) {
+      window.location.href = '/login.html';
+      return;
+    }
+
+    currentUser = data.user;
+
+    // Update user info in sidebar
+    const nameEl = document.getElementById('sidebar-user-name');
+    const roleEl = document.getElementById('sidebar-user-role');
+    const avatarEl = document.getElementById('sidebar-user-avatar');
+    if (nameEl) nameEl.textContent = `@${data.user.username}`;
+    if (roleEl) roleEl.textContent = (data.user.roles && data.user.roles[0]) || 'Administrator';
+    if (avatarEl && data.user.avatar) {
+      avatarEl.src = `https://cdn.discordapp.com/avatars/${data.user.id}/${data.user.avatar}.png`;
+    }
+
     initSocket();
     loadDashboardData();
+  } catch (err) {
+    window.location.href = '/login.html';
   }
-
-  // Auth Form
-  document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const password = document.getElementById('auth-password').value;
-    const errorBox = document.getElementById('auth-error');
-
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      });
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        errorBox.textContent = data.error || 'Invalid password';
-        errorBox.classList.remove('hidden');
-        return;
-      }
-
-      errorBox.classList.add('hidden');
-      setToken(data.token);
-      hideAuthModal();
-      initSocket();
-      loadDashboardData();
-      showToast('Unlocked Empirial Dashboard', 'success');
-    } catch (err) {
-      errorBox.textContent = err.message;
-      errorBox.classList.remove('hidden');
-    }
-  });
 
   // Search input on All tickets
   document.getElementById('all-tickets-search')?.addEventListener('input', () => {

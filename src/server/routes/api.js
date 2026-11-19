@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../../storage/db');
 const { closeTicket } = require('../../bot/handlers/ticketManager');
+const { authMiddleware } = require('./auth');
 const {
   ChannelType,
   EmbedBuilder,
@@ -15,32 +16,37 @@ const {
 } = require('discord.js');
 
 module.exports = function(client, io) {
-  // Stats Endpoint
-  router.get('/stats', (req, res) => {
-    const stats = db.getStats();
-    const botOnline = process.env.VERCEL ? true : (client.isReady ? client.isReady() : false);
-    const guilds = client.guilds && client.guilds.cache ? client.guilds.cache.size : (process.env.VERCEL ? 1 : 0);
-    const ping = client.ws && client.ws.ping > 0 ? client.ws.ping : (process.env.VERCEL ? 36 : 42);
-    const uptime = client.uptime ? Math.floor(client.uptime / 1000) : (process.env.VERCEL ? 364000 : 0);
+  // Public Stats Endpoint (Real Supabase Counts Only)
+  router.get('/stats', async (req, res) => {
+    try {
+      const stats = await db.getStats();
+      const botOnline = client && client.isReady ? client.isReady() : false;
+      const guildsCount = client && client.guilds && client.guilds.cache ? client.guilds.cache.size : 0;
+      const ping = client && client.ws && client.ws.ping > 0 ? client.ws.ping : 0;
+      const uptime = client && client.uptime ? Math.floor(client.uptime / 1000) : 0;
 
-    res.json({
-      tickets: stats,
-      bot: {
-        online: botOnline,
-        username: client.user ? client.user.tag : 'Empirial#7504',
-        avatar: client.user ? client.user.displayAvatarURL() : 'https://cdn.discordapp.com/embed/avatars/0.png',
-        guilds,
-        ping,
-        uptime,
-        clientId: process.env.CLIENT_ID || '1572574664063193179'
-      }
-    });
+      res.json({
+        tickets: stats,
+        bot: {
+          online: botOnline,
+          username: client && client.user ? client.user.tag : 'Empirial',
+          avatar: client && client.user ? client.user.displayAvatarURL() : 'https://cdn.discordapp.com/embed/avatars/0.png',
+          guilds: guildsCount,
+          ping,
+          uptime,
+          clientId: process.env.CLIENT_ID || '1572574664063193179'
+        }
+      });
+    } catch (err) {
+      console.error('[API /stats]', err);
+      res.status(500).json({ error: err.message });
+    }
   });
 
-  // Get Guild Channels and Roles for Dashboard Dropdowns
-  router.get('/guild-data', async (req, res) => {
+  // Get Guild Channels and Roles for Dashboard Configuration Dropdowns
+  router.get('/guild-data', authMiddleware, async (req, res) => {
     try {
-      if (!client.isReady() || client.guilds.cache.size === 0) {
+      if (!client || !client.isReady || !client.isReady() || client.guilds.cache.size === 0) {
         return res.json({
           hasGuilds: false,
           guilds: [],
@@ -81,46 +87,57 @@ module.exports = function(client, io) {
     }
   });
 
-  // Get All Tickets
-  router.get('/tickets', (req, res) => {
-    const { status, search } = req.query;
-    let tickets = db.getTickets();
+  // Get All Tickets (From Supabase Database)
+  router.get('/tickets', authMiddleware, async (req, res) => {
+    try {
+      const { status, search } = req.query;
+      let tickets = await db.getTickets();
 
-    if (status && status !== 'all') {
-      tickets = tickets.filter(t => t.status === status);
+      if (status && status !== 'all') {
+        tickets = tickets.filter(t => t.status === status);
+      }
+
+      if (search) {
+        const q = search.toLowerCase();
+        tickets = tickets.filter(t =>
+          (t.id && t.id.toLowerCase().includes(q)) ||
+          (t.userTag && t.userTag.toLowerCase().includes(q)) ||
+          (t.subject && t.subject.toLowerCase().includes(q)) ||
+          (t.category && t.category.toLowerCase().includes(q))
+        );
+      }
+
+      res.json(tickets);
+    } catch (err) {
+      console.error('[API /tickets]', err);
+      res.status(500).json({ error: err.message });
     }
-
-    if (search) {
-      const q = search.toLowerCase();
-      tickets = tickets.filter(t =>
-        (t.id && t.id.toLowerCase().includes(q)) ||
-        (t.userTag && t.userTag.toLowerCase().includes(q)) ||
-        (t.subject && t.subject.toLowerCase().includes(q)) ||
-        (t.category && t.category.toLowerCase().includes(q))
-      );
-    }
-
-    res.json(tickets);
   });
 
   // Get Single Ticket by ID
-  router.get('/tickets/:id', (req, res) => {
-    const ticket = db.getTicketById(req.params.id);
-    if (!ticket) {
-      return res.status(404).json({ error: 'Ticket not found' });
+  router.get('/tickets/:id', authMiddleware, async (req, res) => {
+    try {
+      const ticket = await db.getTicketById(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ error: 'Ticket not found' });
+      }
+      res.json(ticket);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
-    res.json(ticket);
   });
 
   // Sync Slash Commands
-  router.post('/sync-commands', async (req, res) => {
+  router.post('/sync-commands', authMiddleware, async (req, res) => {
     try {
       const { registerCommands } = require('../../bot/deployCommands');
       const token = process.env.BOT_TOKEN;
       const clientId = process.env.CLIENT_ID || '1572574664063193179';
 
-      for (const [guildId] of client.guilds.cache) {
-        await registerCommands(token, clientId, guildId);
+      if (client && client.guilds && client.guilds.cache) {
+        for (const [guildId] of client.guilds.cache) {
+          await registerCommands(token, clientId, guildId);
+        }
       }
       await registerCommands(token, clientId);
 
@@ -132,18 +149,22 @@ module.exports = function(client, io) {
   });
 
   // Claim Ticket via Web Dashboard
-  router.post('/tickets/:id/claim', async (req, res) => {
+  router.post('/tickets/:id/claim', authMiddleware, async (req, res) => {
     try {
-      const ticket = db.getTicketById(req.params.id);
+      const ticket = await db.getTicketById(req.params.id);
       if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
       if (ticket.status === 'closed') return res.status(400).json({ error: 'Cannot claim a closed ticket' });
 
-      const updated = db.updateTicket(ticket.id, {
+      const staffTag = req.user ? (req.user.username + (req.user.discriminator && req.user.discriminator !== '0' ? '#' + req.user.discriminator : '')) : (req.body.staffTag || 'Empirial Staff');
+      const staffId = req.user ? req.user.user_id : 'web-staff';
+      const avatarUrl = req.user && req.user.avatar ? `https://cdn.discordapp.com/avatars/${req.user.user_id}/${req.user.avatar}.png` : null;
+
+      const updated = await db.updateTicket(ticket.id, {
         status: 'claimed',
         claimedBy: {
-          id: 'web-staff',
-          tag: req.body.staffTag || 'Empirial Staff',
-          username: req.body.staffUsername || 'Staff'
+          id: staffId,
+          tag: staffTag,
+          avatar: avatarUrl
         }
       });
 
@@ -155,9 +176,9 @@ module.exports = function(client, io) {
   });
 
   // Close Ticket via Web Dashboard
-  router.post('/tickets/:id/close', async (req, res) => {
+  router.post('/tickets/:id/close', authMiddleware, async (req, res) => {
     try {
-      const ticket = db.getTicketById(req.params.id);
+      const ticket = await db.getTicketById(req.params.id);
       if (!ticket) {
         return res.status(404).json({ error: 'Ticket not found' });
       }
@@ -166,13 +187,20 @@ module.exports = function(client, io) {
         return res.status(400).json({ error: 'Ticket is already closed' });
       }
 
-      const channel = await client.channels.fetch(ticket.channelId).catch(() => null);
+      const closedByUser = {
+        id: req.user ? req.user.user_id : 'web-admin',
+        tag: req.user ? req.user.username : 'Web Dashboard Admin',
+        username: req.user ? req.user.username : 'Web Admin'
+      };
+
+      const channel = client && client.channels && client.channels.cache ? client.channels.cache.get(ticket.channelId) : null;
+
       if (!channel) {
-        // Channel was deleted manually on Discord, mark closed in DB
-        const updated = db.updateTicket(ticket.id, {
+        // Channel was deleted on Discord or bot is in serverless mode, mark closed in Supabase
+        const updated = await db.updateTicket(ticket.id, {
           status: 'closed',
           closedAt: new Date().toISOString(),
-          closedBy: { id: 'web', tag: 'Web Admin' }
+          closedBy: closedByUser
         });
         if (io) io.emit('ticket:closed', updated);
         return res.json({ success: true, ticket: updated });
@@ -180,7 +208,7 @@ module.exports = function(client, io) {
 
       const result = await closeTicket({
         channel,
-        closedByUser: { id: 'web-admin', tag: 'Web Dashboard Admin', username: 'Web Admin' },
+        closedByUser,
         reason: req.body.reason || 'Closed via Web Dashboard'
       });
 
@@ -192,39 +220,40 @@ module.exports = function(client, io) {
   });
 
   // Send Message into Ticket from Web Dashboard
-  router.post('/tickets/:id/message', async (req, res) => {
+  router.post('/tickets/:id/message', authMiddleware, async (req, res) => {
     try {
       const { text } = req.body;
       if (!text || !text.trim()) {
         return res.status(400).json({ error: 'Message text cannot be empty' });
       }
 
-      const ticket = db.getTicketById(req.params.id);
+      const ticket = await db.getTicketById(req.params.id);
       if (!ticket || ticket.status === 'closed') {
         return res.status(404).json({ error: 'Ticket not found or is closed' });
       }
 
-      const channel = await client.channels.fetch(ticket.channelId).catch(() => null);
-      if (!channel) {
-        return res.status(404).json({ error: 'Discord channel not found or has been deleted' });
+      const authorName = req.user ? req.user.username : 'Empirial Staff';
+      const authorAvatar = req.user && req.user.avatar ? `https://cdn.discordapp.com/avatars/${req.user.user_id}/${req.user.avatar}.png` : (client && client.user ? client.user.displayAvatarURL() : 'https://cdn.discordapp.com/embed/avatars/0.png');
+
+      const channel = client && client.channels && client.channels.cache ? client.channels.cache.get(ticket.channelId) : null;
+      if (channel) {
+        const embed = new EmbedBuilder()
+          .setColor('#7c3aed')
+          .setAuthor({ name: `👑 ${authorName} (Empirial Staff)`, iconURL: authorAvatar })
+          .setDescription(text.trim())
+          .setTimestamp();
+
+        await channel.send({ embeds: [embed] }).catch(() => {});
       }
 
-      const embed = new EmbedBuilder()
-        .setColor('#7c3aed')
-        .setAuthor({ name: '👑 Empirial Staff (Web Dashboard)', iconURL: client.user.displayAvatarURL() })
-        .setDescription(text.trim())
-        .setTimestamp();
-
-      const sentMsg = await channel.send({ embeds: [embed] });
-
       const msgData = {
-        id: sentMsg.id,
+        id: 'web-' + Date.now(),
         author: {
-          id: 'web-staff',
-          username: 'Empirial Staff',
-          tag: 'Empirial Staff (Web)',
-          avatar: client.user.displayAvatarURL(),
-          bot: true
+          id: req.user ? req.user.user_id : 'web-staff',
+          username: authorName,
+          tag: authorName + ' (Web)',
+          avatar: authorAvatar,
+          bot: false
         },
         content: text.trim(),
         createdAt: new Date().toISOString(),
@@ -232,7 +261,7 @@ module.exports = function(client, io) {
         embeds: []
       };
 
-      db.appendMessageToTicket(ticket.channelId, msgData);
+      await db.appendMessageToTicket(ticket.channelId, msgData);
 
       if (io) {
         io.emit('ticket:message', {
@@ -249,20 +278,10 @@ module.exports = function(client, io) {
     }
   });
 
-  // List All Transcripts
-  router.get('/transcripts', (req, res) => {
+  // List All Transcripts (From Supabase Database)
+  router.get('/transcripts', authMiddleware, async (req, res) => {
     try {
-      const files = fs.readdirSync(db.TRANSCRIPTS_DIR).filter(f => f.endsWith('.html'));
-      const transcripts = files.map(file => {
-        const stats = fs.statSync(path.join(db.TRANSCRIPTS_DIR, file));
-        return {
-          filename: file,
-          ticketId: file.replace('.html', ''),
-          size: stats.size,
-          createdAt: stats.birthtime || stats.mtime
-        };
-      }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
+      const transcripts = await db.getTranscripts();
       res.json(transcripts);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -270,26 +289,41 @@ module.exports = function(client, io) {
   });
 
   // View / Download Transcript HTML
-  router.get('/transcripts/:filename', (req, res) => {
-    const filename = path.basename(req.params.filename);
-    const filePath = path.join(db.TRANSCRIPTS_DIR, filename);
+  router.get('/transcripts/:filename', async (req, res) => {
+    try {
+      const filename = path.basename(req.params.filename);
+      const content = await db.getTranscriptContent(filename);
+      if (content) {
+        res.setHeader('Content-Type', 'text/html');
+        return res.send(content);
+      }
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).send('Transcript file not found');
+      // Fallback to local disk if present
+      const localPath = path.join(db.TRANSCRIPTS_DIR, filename);
+      if (fs.existsSync(localPath)) {
+        return res.sendFile(localPath);
+      }
+
+      res.status(404).send('Transcript file not found');
+    } catch (err) {
+      res.status(500).send('Error retrieving transcript');
     }
-
-    res.sendFile(filePath);
   });
 
   // Get Config
-  router.get('/config', (req, res) => {
-    res.json(db.getConfig());
+  router.get('/config', authMiddleware, async (req, res) => {
+    try {
+      const config = await db.getConfig();
+      res.json(config);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // Update Config
-  router.put('/config', (req, res) => {
+  router.put('/config', authMiddleware, async (req, res) => {
     try {
-      const updated = db.updateConfig(req.body);
+      const updated = await db.updateConfig(req.body);
       if (io) io.emit('config:updated', updated);
       res.json({ success: true, config: updated });
     } catch (err) {
@@ -298,11 +332,15 @@ module.exports = function(client, io) {
   });
 
   // Deploy Ticket Panel to Channel from Web
-  router.post('/panel/deploy', async (req, res) => {
+  router.post('/panel/deploy', authMiddleware, async (req, res) => {
     try {
       const { channelId } = req.body;
       if (!channelId) {
         return res.status(400).json({ error: 'Please specify a target channel ID' });
+      }
+
+      if (!client || !client.isReady || !client.isReady()) {
+        return res.status(503).json({ error: 'Bot Discord Gateway client is not connected to Discord right now.' });
       }
 
       const channel = await client.channels.fetch(channelId).catch(() => null);
@@ -310,7 +348,7 @@ module.exports = function(client, io) {
         return res.status(404).json({ error: 'Channel not found or bot does not have access' });
       }
 
-      const config = db.getConfig();
+      const config = await db.getConfig();
       const panel = config.panelConfig || {};
 
       const embed = new EmbedBuilder()
@@ -357,7 +395,7 @@ module.exports = function(client, io) {
         components: rows
       });
 
-      db.updateConfig({ panelChannelId: channel.id });
+      await db.updateConfig({ panelChannelId: channel.id });
 
       res.json({ success: true, message: `Ticket panel deployed to #${channel.name}` });
     } catch (err) {

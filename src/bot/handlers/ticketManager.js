@@ -38,7 +38,7 @@ async function getOrCreateCategory(guild, config) {
     c => c.type === ChannelType.GuildCategory && (c.name.includes('TICKETS') || c.name.includes('Tickets'))
   );
   if (found) {
-    db.updateConfig({ ticketCategoryId: found.id });
+    await db.updateConfig({ ticketCategoryId: found.id });
     return found;
   }
 
@@ -54,7 +54,7 @@ async function getOrCreateCategory(guild, config) {
         }
       ]
     });
-    db.updateConfig({ ticketCategoryId: newCategory.id });
+    await db.updateConfig({ ticketCategoryId: newCategory.id });
     return newCategory;
   } catch (err) {
     console.error('[TicketManager] Failed to create category:', err);
@@ -66,10 +66,10 @@ async function getOrCreateCategory(guild, config) {
  * Creates a new ticket channel and records in database
  */
 async function createTicketChannel({ guild, user, categoryId = 'general', subject = 'Support Request', description = '' }) {
-  const config = db.getConfig();
+  const config = await db.getConfig();
 
   // Check ticket limit
-  const openCount = db.countUserOpenTickets(user.id);
+  const openCount = await db.countUserOpenTickets(user.id);
   const maxAllowed = config.maxOpenTicketsPerUser || 1;
   if (openCount >= maxAllowed) {
     throw new Error(`You already have ${openCount} open ticket(s). Maximum allowed is ${maxAllowed}. Please close your current ticket before opening another.`);
@@ -144,7 +144,7 @@ async function createTicketChannel({ guild, user, categoryId = 'general', subjec
   };
 
   // Save to database
-  const ticketRecord = db.createTicket({
+  const ticketRecord = await db.createTicket({
     channelId: channel.id,
     guildId: guild.id,
     userId: user.id,
@@ -207,7 +207,7 @@ async function createTicketChannel({ guild, user, categoryId = 'general', subjec
  * Closes the ticket, generates transcript, logs, and deletes channel
  */
 async function closeTicket({ channel, closedByUser, reason = 'No reason provided' }) {
-  const ticket = db.getTicketByChannelId(channel.id);
+  const ticket = await db.getTicketByChannelId(channel.id);
   if (!ticket) {
     throw new Error('This channel is not an active ticket in the database.');
   }
@@ -216,7 +216,7 @@ async function closeTicket({ channel, closedByUser, reason = 'No reason provided
   const transcriptResult = await generateTranscript(ticket, channel, closedByUser);
 
   // Update in database
-  const updatedTicket = db.updateTicket(ticket.id, {
+  const updatedTicket = await db.updateTicket(ticket.id, {
     status: 'closed',
     closedAt: new Date().toISOString(),
     closedBy: {
@@ -237,7 +237,7 @@ async function closeTicket({ channel, closedByUser, reason = 'No reason provided
   await channel.send({ embeds: [closingEmbed] });
 
   // Post to Logs Channel if configured
-  const config = db.getConfig();
+  const config = await db.getConfig();
   if (config.logsChannelId) {
     try {
       const logsChannel = channel.guild.channels.cache.get(config.logsChannelId);
@@ -306,7 +306,7 @@ async function closeTicket({ channel, closedByUser, reason = 'No reason provided
  * Claims a ticket by staff member
  */
 async function claimTicket({ channel, staffUser }) {
-  const ticket = db.getTicketByChannelId(channel.id);
+  const ticket = await db.getTicketByChannelId(channel.id);
   if (!ticket) {
     throw new Error('This channel is not an active ticket in the database.');
   }
@@ -315,7 +315,7 @@ async function claimTicket({ channel, staffUser }) {
     throw new Error(`This ticket is already claimed by <@${ticket.claimedBy.id}>!`);
   }
 
-  const updatedTicket = db.updateTicket(ticket.id, {
+  const updatedTicket = await db.updateTicket(ticket.id, {
     status: 'claimed',
     claimedBy: {
       id: staffUser.id,

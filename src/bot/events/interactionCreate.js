@@ -34,7 +34,7 @@ module.exports = {
 
         // Open Ticket Button -> Show Modal
         if (customId === 'ticket_create_btn') {
-          return showTicketModal(interaction, 'general');
+          return await showTicketModal(interaction, 'general');
         }
 
         // Close Confirm Prompt
@@ -103,7 +103,7 @@ module.exports = {
 
         // Instant Transcript Button
         if (customId === 'ticket_transcript') {
-          const ticket = db.getTicketByChannelId(interaction.channel.id);
+          const ticket = await db.getTicketByChannelId(interaction.channel.id);
           if (!ticket) {
             return interaction.reply({
               content: '❌ Could not find ticket record.',
@@ -126,7 +126,7 @@ module.exports = {
         if (interaction.customId === 'ticket_select_category') {
           const selected = interaction.values[0];
           const categoryId = selected.replace('ticket_cat_', '');
-          return showTicketModal(interaction, categoryId);
+          return await showTicketModal(interaction, categoryId);
         }
       }
 
@@ -174,7 +174,7 @@ module.exports = {
  * Helper to display ticket creation modal
  */
 async function showTicketModal(interaction, categoryId) {
-  const config = db.getConfig();
+  const config = await db.getConfig();
   const cat = (config.categories || []).find(c => c.id === categoryId) || { label: 'Support' };
 
   const modal = new ModalBuilder()

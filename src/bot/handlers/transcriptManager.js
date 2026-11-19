@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const { AttachmentBuilder } = require('discord.js');
-const { TRANSCRIPTS_DIR } = require('../../storage/db');
+const db = require('../../storage/db');
+const { TRANSCRIPTS_DIR } = db;
 
 /**
  * Escapes HTML characters safely
@@ -393,10 +394,10 @@ async function generateTranscript(ticket, channel, closedByUser = null) {
 </body>
 </html>`;
 
-  // Save HTML file in data/transcripts
+  // Save HTML file in Supabase and local cache
   const fileName = `${ticketId}.html`;
+  await db.saveTranscript(ticketId, fileName, html, messages.length);
   const filePath = path.join(TRANSCRIPTS_DIR, fileName);
-  fs.writeFileSync(filePath, html, 'utf-8');
 
   // Create Discord AttachmentBuilder
   const attachment = new AttachmentBuilder(Buffer.from(html, 'utf-8'), { name: fileName });

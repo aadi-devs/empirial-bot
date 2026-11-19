@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const { router: authRouter, authMiddleware } = require('./routes/auth');
 const createApiRouter = require('./routes/api');
@@ -22,6 +23,7 @@ function createServer(discordClient) {
 
   // Middlewares
   app.use(cors());
+  app.use(cookieParser());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 

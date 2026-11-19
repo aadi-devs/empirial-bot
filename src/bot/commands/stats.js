@@ -7,7 +7,7 @@ module.exports = {
     .setDescription('Display overall ticket statistics and activity for Empirial'),
 
   async execute(interaction) {
-    const stats = db.getStats();
+    const stats = await db.getStats();
 
     const embed = new EmbedBuilder()
       .setColor('#7c3aed')
@@ -18,7 +18,7 @@ module.exports = {
         { name: '📌 Claimed Tickets', value: `${stats.claimed}`, inline: true },
         { name: '🔒 Closed Tickets', value: `${stats.closed}`, inline: true },
         { name: '⚡ Active Tickets', value: `${stats.active}`, inline: true },
-        { name: '🖥️ Web Dashboard', value: '[Localhost Dashboard](http://localhost:3000)', inline: true }
+        { name: '🖥️ Web Dashboard', value: '[Empirial Dashboard](https://empirial-bot.vercel.app)', inline: true }
       )
       .setFooter({ text: 'Empirial Ticket System' })
       .setTimestamp();

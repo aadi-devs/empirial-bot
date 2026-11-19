@@ -8,7 +8,7 @@ module.exports = {
     .setDescription('Generate and download an instant HTML transcript of this ticket'),
 
   async execute(interaction) {
-    const ticket = db.getTicketByChannelId(interaction.channel.id);
+    const ticket = await db.getTicketByChannelId(interaction.channel.id);
     if (!ticket) {
       return interaction.reply({
         content: '❌ This command can only be used inside a ticket channel.',

@@ -54,7 +54,7 @@ router.post('/', async (req, res) => {
     }
 
     if (name === 'stats') {
-      const stats = db.getStats();
+      const stats = await db.getStats();
       return res.json({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
@@ -76,7 +76,7 @@ router.post('/', async (req, res) => {
     }
 
     if (name === 'ticket-panel') {
-      const config = db.getConfig();
+      const config = await db.getConfig();
       const panel = config.panelConfig || {};
 
       return res.json({

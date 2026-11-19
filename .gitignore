@@ -3,5 +3,6 @@ node_modules/
 .env.local
 .vercel/
 stitch_export/
+stitch_export_2/
 data/transcripts/*.html
 *.log

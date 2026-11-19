@@ -23,7 +23,7 @@ module.exports = {
 
   async execute(interaction) {
     const targetChannel = interaction.options.getChannel('channel') || interaction.channel;
-    const config = db.getConfig();
+    const config = await db.getConfig();
     const panel = config.panelConfig || {};
 
     const embed = new EmbedBuilder()
@@ -75,7 +75,7 @@ module.exports = {
     });
 
     // Update config with panel channel ID
-    db.updateConfig({ panelChannelId: targetChannel.id });
+    await db.updateConfig({ panelChannelId: targetChannel.id });
 
     await interaction.reply({
       content: `✅ Ticket panel successfully deployed to <#${targetChannel.id}>!`,

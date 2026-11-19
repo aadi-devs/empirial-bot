@@ -6,7 +6,7 @@ module.exports = {
     // Ignore bots or system messages if not in ticket
     if (!message.guild || message.channel.isDMBased()) return;
 
-    const ticket = db.getTicketByChannelId(message.channel.id);
+    const ticket = await db.getTicketByChannelId(message.channel.id);
     if (!ticket || ticket.status === 'closed') return;
 
     // Cache message in database
@@ -33,7 +33,7 @@ module.exports = {
       }))
     };
 
-    db.appendMessageToTicket(message.channel.id, messageData);
+    await db.appendMessageToTicket(message.channel.id, messageData);
 
     // Broadcast to web dashboard
     if (io) {

@@ -33,7 +33,7 @@ module.exports = {
     if (logsChannel) updates.logsChannelId = logsChannel.id;
     if (category) updates.ticketCategoryId = category.id;
 
-    const newConfig = db.updateConfig(updates);
+    const newConfig = await db.updateConfig(updates);
 
     const embed = new EmbedBuilder()
       .setColor('#10b981')
