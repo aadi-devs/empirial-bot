@@ -1,8 +1,13 @@
-# 👑 Empirial Discord Ticket Bot & Self-Hosted Web Dashboard
+# 👑 Empirial Discord Ticket Bot & Unified Vercel Dashboard
 
-A powerful, all-in-one Discord ticket bot and web management panel designed specifically for the **Empirial** Discord server. Built with Node.js, Discord.js v14, Express, and Socket.IO.
+A powerful, all-in-one Discord ticket bot and web management panel designed specifically for the **Empirial** Discord server. Built with Node.js, Discord.js v14, Express, Supabase Postgres, and Discord OAuth2 RBAC authentication.
 
-Runs **100% locally on your machine** with zero external hosting required.
+- **GitHub Repository**: [https://github.com/aadi-devs/empirial-bot](https://github.com/aadi-devs/empirial-bot)
+- **Live Vercel Production**: [https://empirial-bot-nu.vercel.app](https://empirial-bot-nu.vercel.app)
+- **Database**: Supabase Postgres (Zero mock/simulated values)
+- **Auth**: Discord OAuth2 with Server Administrator / Manage Guild verification
+
+Runs unified on **Vercel Serverless** and locally with Node.js.
 
 ---
 
