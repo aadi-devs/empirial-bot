@@ -1,0 +1,44 @@
+{
+  "serverName": "Empirial",
+  "ticketCategoryId": null,
+  "supportRoleId": null,
+  "adminRoleId": null,
+  "logsChannelId": null,
+  "panelChannelId": null,
+  "ticketCounter": 1,
+  "maxOpenTicketsPerUser": 1,
+  "panelConfig": {
+    "title": "👑 Empirial Support Tickets",
+    "description": "Welcome to the **Empirial** Support Center.\n\nNeed assistance, want to report an issue, or have a billing inquiry? Select the appropriate category below to create a private ticket. Our staff team will be with you shortly.",
+    "color": "#7c3aed",
+    "footerText": "Empirial Support System • Private & Secure",
+    "buttonText": "Open Ticket",
+    "bannerUrl": ""
+  },
+  "categories": [
+    {
+      "id": "general",
+      "label": "General Support",
+      "emoji": "🛠️",
+      "description": "Questions, general help, or questions about Empirial"
+    },
+    {
+      "id": "billing",
+      "label": "Billing & Store",
+      "emoji": "💳",
+      "description": "Inquiries about purchases, store items, or payments"
+    },
+    {
+      "id": "report",
+      "label": "Report & Appeal",
+      "emoji": "🚨",
+      "description": "Report a rule breaker or submit a punishment appeal"
+    },
+    {
+      "id": "partnership",
+      "label": "Partnership & Media",
+      "emoji": "🤝",
+      "description": "Collaborations, sponsorships, and creator inquiries"
+    }
+  ]
+}
