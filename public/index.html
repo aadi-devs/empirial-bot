@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta content="web_dashboard" name="shell-type"/>
+  <title>Empirial • Staff Console &amp; Ticket Operations</title>
+
+  <!-- Typography & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+  <!-- Tailwind CSS Configuration (Obsidian Void) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#121316",
+            "surface-dim": "#121316",
+            "surface-bright": "#38393c",
+            "surface-container-lowest": "#0d0e11",
+            "surface-container-low": "#1b1b1f",
+            "surface-container": "#1f1f23",
+            "surface-container-high": "#292a2d",
+            "surface-container-highest": "#343538",
+            "on-surface": "#e3e2e6",
+            "on-surface-variant": "#c6c5d7",
+            "inverse-surface": "#e3e2e6",
+            "inverse-on-surface": "#303034",
+            "outline": "#8f8fa0",
+            "outline-variant": "#454655",
+            "primary": "#bec2ff",
+            "on-primary": "#000da4",
+            "primary-container": "#5865f2",
+            "on-primary-container": "#fffdff",
+            "secondary": "#66de8c",
+            "on-secondary": "#003919",
+            "secondary-container": "#23a55a",
+            "tertiary": "#ddc73f",
+            "error": "#ffb4ab",
+            "error-container": "#93000a",
+            "background": "#121316",
+            "on-background": "#e3e2e6"
+          },
+          fontFamily: {
+            "sans": ["Geist", "sans-serif"],
+            "mono": ["JetBrains Mono", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; font-family: 'Geist', sans-serif; }
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0d0e11; }
+    ::-webkit-scrollbar-thumb { background: #292a2d; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #5865f2; }
+  </style>
+
+  <!-- Socket.io for Realtime Discord & Ticket Telemetry -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-surface-container-lowest text-on-surface font-sans text-sm selection:bg-primary-container selection:text-on-primary-container antialiased">
+
+  <!-- ================= LEFT SIDEBAR (w-60, 240px) ================= -->
+  <aside class="fixed left-0 top-0 h-full w-60 bg-surface-container-lowest border-r border-outline-variant/30 z-50 flex flex-col justify-between select-none">
+    <div class="flex flex-col flex-1 min-h-0 overflow-y-auto">
+      
+      <!-- Brand & Version Strip -->
+      <div class="h-12 px-4 flex items-center justify-between border-b border-outline-variant/30 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-6 h-6 rounded bg-primary-container flex items-center justify-center text-on-primary-container shadow-sm">
+            <span class="material-symbols-outlined text-[15px]">smart_toy</span>
+          </div>
+          <span class="font-semibold text-sm tracking-tight text-on-surface">Empirial</span>
+        </div>
+        <span class="font-mono text-[10px] text-outline px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant/30">v2.4</span>
+      </div>
+
+      <!-- Navigation Tree -->
+      <nav class="flex flex-col py-2 px-1.5 gap-0.5" id="sidebar-nav">
+        <!-- Overview Link -->
+        <a href="#" onclick="switchView('overview'); return false;" class="nav-item flex items-center px-3 py-1.5 rounded-sm transition-colors bg-surface-container text-on-surface font-medium border-l border-primary-container pl-3" data-path="overview" data-nav="overview">
+          <span class="material-symbols-outlined text-[16px] mr-2.5 text-outline">grid_view</span>
+          <span>Overview</span>
+        </a>
+
+        <!-- Tickets Section Header -->
+        <div class="mt-4 px-3 pb-1">
+          <span class="font-mono text-[10px] uppercase tracking-wider text-outline/80">Tickets</span>
+        </div>
+
+        <!-- Ticket Links -->
+        <div class="flex flex-col gap-0.5">
+          <a href="#" onclick="switchView('all-tickets'); return false;" class="nav-item flex items-center justify-between px-3 py-1.5 rounded-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-xs" data-path="all-tickets" data-nav="all-tickets">
+            <span class="flex items-center">
+              <span class="material-symbols-outlined text-[16px] mr-2.5 text-outline">confirmation_number</span>
+              <span>All tickets</span>
+            </span>
+            <span id="sidebar-total-badge" class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-outline border border-outline-variant/20">0</span>
+          </a>
+
+          <a href="#" onclick="switchView('all-tickets', 'unclaimed'); return false;" class="nav-item flex items-center justify-between px-3 py-1.5 rounded-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-xs" data-path="unclaimed-tickets" data-nav="unclaimed">
+            <span class="flex items-center">
+              <span class="material-symbols-outlined text-[16px] mr-2.5 text-outline">inbox</span>
+              <span>Unclaimed</span>
+            </span>
+            <span id="sidebar-unclaimed-badge" class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-outline border border-outline-variant/20">0</span>
+          </a>
+
+          <a href="#" onclick="switchView('panels'); return false;" class="nav-item flex items-center px-3 py-1.5 rounded-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-xs" data-path="ticket-panels" data-nav="panels">
+            <span class="material-symbols-outlined text-[16px] mr-2.5 text-outline">dashboard_customize</span>
+            <span>Panels</span>
+          </a>
+
+          <a href="#" onclick="switchView('settings'); return false;" class="nav-item flex items-center px-3 py-1.5 rounded-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-xs" data-path="ticket-settings" data-nav="settings">
+            <span class="material-symbols-outlined text-[16px] mr-2.5 text-outline">tune</span>
+            <span>Settings</span>
+          </a>
+        </div>
+
+        <!-- System Section Header -->
+        <div class="mt-4 px-3 pb-1">
+          <span class="font-mono text-[10px] uppercase tracking-wider text-outline/80">System</span>
+        </div>
+
+        <div class="flex flex-col gap-0.5">
+          <a href="#" onclick="switchView('access'); return false;" class="nav-item flex items-center px-3 py-1.5 rounded-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-xs" data-path="access-control" data-nav="access">
+            <span class="material-symbols-outlined text-[16px] mr-2.5 text-outline">shield_person</span>
+            <span>Access &amp; Audit</span>
+          </a>
+
+          <a id="sidebar-invite-link" href="#" target="_blank" class="flex items-center px-3 py-1.5 rounded-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-xs">
+            <span class="material-symbols-outlined text-[16px] mr-2.5 text-outline">add_link</span>
+            <span>Invite Bot</span>
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Sidebar Bottom Telemetry Strip & User Profile -->
+    <div class="p-2 border-t border-outline-variant/30 flex flex-col gap-2">
+      <!-- Cluster Status Strip -->
+      <div class="flex items-center justify-between px-2.5 py-1.5 rounded bg-surface-container/50 border border-outline-variant/20 font-mono text-[11px]">
+        <div class="flex items-center gap-2">
+          <span id="sidebar-status-dot" class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+          <span class="text-outline">CLUSTER 01</span>
+        </div>
+        <span id="sidebar-ping" class="text-outline">42ms</span>
+      </div>
+
+      <!-- Active Staff User Profile -->
+      <div class="flex items-center justify-between px-2 py-1 rounded bg-surface-container/30 border border-outline-variant/15">
+        <div class="flex items-center gap-2 min-w-0">
+          <img id="sidebar-user-avatar" class="w-6 h-6 rounded-full bg-surface-container-high object-cover shrink-0" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar"/>
+          <div class="flex flex-col min-w-0">
+            <span id="sidebar-user-name" class="font-medium text-xs text-on-surface truncate">@Admin</span>
+            <span id="sidebar-user-role" class="font-mono text-[10px] text-outline truncate">Administrator</span>
+          </div>
+        </div>
+        <button onclick="logout()" title="Log out" class="w-6 h-6 flex items-center justify-center text-outline hover:text-error transition-colors cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">logout</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= TOP HEADER (Fixed left-60 right-0 h-12) ================= -->
+  <div class="pl-60">
+    <header class="fixed top-0 left-60 right-0 h-12 bg-surface-container-lowest/90 backdrop-blur border-b border-outline-variant/30 z-40 flex items-center justify-between px-6">
+      
+      <!-- Breadcrumbs -->
+      <div class="flex items-center gap-2 text-xs">
+        <span class="text-outline">Empirial</span>
+        <span class="text-outline-variant font-mono text-[11px]">/</span>
+        <span class="text-outline">Tickets</span>
+        <span class="text-outline-variant font-mono text-[11px]">/</span>
+        <span id="breadcrumb-current" class="text-on-surface font-medium">Overview</span>
+      </div>
+
+      <!-- Search Field with Cmd+K -->
+      <div class="flex items-center gap-3">
+        <div class="relative flex items-center">
+          <span class="material-symbols-outlined absolute left-2.5 text-outline text-[16px]">search</span>
+          <input id="global-search-input" class="h-7 w-64 bg-surface-container pl-8 pr-12 text-on-surface placeholder:text-outline text-xs rounded-sm border border-outline-variant/30 focus:outline-none focus:border-primary-container transition-colors" placeholder="Search tickets, IDs..." type="text"/>
+          <div class="absolute right-2 px-1 py-0.2 rounded bg-surface-container-high border border-outline-variant/40 font-mono text-[10px] text-outline select-none">⌘K</div>
+        </div>
+      </div>
+
+      <!-- Header Right Controls -->
+      <div class="flex items-center gap-4">
+        <!-- Bot Status Pill -->
+        <div class="flex items-center gap-1.5 font-mono text-[11px] text-outline">
+          <span id="top-status-dot" class="w-2 h-2 rounded-full bg-secondary"></span>
+          <span id="top-status-text">Bot online</span>
+        </div>
+
+        <!-- Invite Button -->
+        <a id="header-invite-btn" href="#" target="_blank" class="h-7 px-2.5 rounded bg-surface-container hover:bg-surface-container-high text-outline hover:text-on-surface font-mono text-[11px] transition-colors flex items-center gap-1.5 border border-outline-variant/30">
+          <span class="material-symbols-outlined text-[14px]">link</span>
+          <span>Invite Bot</span>
+        </a>
+
+        <!-- User Quick Avatar -->
+        <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center cursor-pointer" onclick="switchView('access')" title="View session &amp; staff telemetry">
+          <span class="material-symbols-outlined text-on-primary text-[16px]">person</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ================= MAIN WORKSPACE CANVAS ================= -->
+    <main class="w-full pt-12 bg-surface min-h-screen">
+      
+      <!-- ======================================================== -->
+      <!-- VIEW 1: OVERVIEW (Obsidian Void Minimal Analytics)      -->
+      <!-- ======================================================== -->
+      <div id="view-overview" class="view-panel flex flex-col w-full">
+        
+        <!-- Telemetry Ribbon Bar -->
+        <div class="flex items-center justify-between px-6 py-2 bg-surface-container-lowest text-outline font-mono text-[11px] border-b border-outline-variant/20">
+          <div class="flex items-center gap-3">
+            <span class="text-on-surface font-medium">Empirial Core v2.4</span>
+            <span class="text-outline-variant">/</span>
+            <span>Cluster 01 [Shard #0]</span>
+            <span class="text-outline-variant">/</span>
+            <span id="strip-uptime">Uptime 99.98%</span>
+            <span class="text-outline-variant">/</span>
+            <span id="strip-ping">Socket Latency 42ms</span>
+            <span class="text-outline-variant">/</span>
+            <span id="strip-guilds">1 server</span>
+          </div>
+          <div class="flex items-center gap-4 text-[10px]">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[13px] text-secondary">database</span>
+              <span>SUPABASE POSTGRES</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[13px] text-primary">swap_vert</span>
+              <span id="strip-bot-status">BOT ONLINE</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+          
+          <!-- Top Metric Numbers: High Scale, Minimal Hairline Borders -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            
+            <!-- Metric 1: Total -->
+            <div class="flex flex-col space-y-1">
+              <div class="flex items-baseline gap-2">
+                <span id="kpi-total" class="text-3xl font-semibold text-on-surface tracking-tight">0</span>
+                <span class="font-mono text-[11px] text-secondary flex items-center">
+                  <span class="material-symbols-outlined text-[14px]">arrow_drop_up</span>Active
+                </span>
+              </div>
+              <span class="font-mono text-[11px] uppercase tracking-wider text-outline">Total Tickets Processed</span>
+              <span class="text-[11px] text-outline-variant">Logged in Supabase Postgres</span>
+            </div>
+
+            <!-- Metric 2: Open -->
+            <div class="flex flex-col space-y-1">
+              <div class="flex items-baseline gap-2">
+                <span id="kpi-open" class="text-3xl font-semibold text-on-surface tracking-tight">0</span>
+                <span class="font-mono text-[11px] text-primary flex items-center">
+                  <span class="material-symbols-outlined text-[14px]">radio_button_checked</span>Queued
+                </span>
+              </div>
+              <span class="font-mono text-[11px] uppercase tracking-wider text-outline">Active Open Tickets</span>
+              <span class="text-[11px] text-outline-variant">Awaiting staff response</span>
+            </div>
+
+            <!-- Metric 3: Unclaimed -->
+            <div class="flex flex-col space-y-1">
+              <div class="flex items-baseline gap-2">
+                <span id="kpi-unclaimed" class="text-3xl font-semibold text-on-surface tracking-tight">0</span>
+                <span class="font-mono text-[11px] text-tertiary flex items-center">
+                  <span class="material-symbols-outlined text-[14px]">hourglass_empty</span>Unassigned
+                </span>
+              </div>
+              <span class="font-mono text-[11px] uppercase tracking-wider text-outline">Unclaimed Tickets</span>
+              <span class="text-[11px] text-outline-variant">Ready for triage</span>
+            </div>
+
+            <!-- Metric 4: Resolution Rate -->
+            <div class="flex flex-col space-y-1">
+              <div class="flex items-baseline gap-2">
+                <span id="kpi-rate" class="text-3xl font-semibold text-on-surface tracking-tight">100%</span>
+                <span class="font-mono text-[11px] text-secondary flex items-center">
+                  <span class="material-symbols-outlined text-[14px]">check</span>SLA
+                </span>
+              </div>
+              <span class="font-mono text-[11px] uppercase tracking-wider text-outline">Resolution Rate</span>
+              <span id="kpi-closed-sub" class="text-[11px] text-outline-variant">0 resolved tickets</span>
+              <div class="w-full h-1 bg-surface-container overflow-hidden rounded-full mt-1">
+                <div id="kpi-progress-bar" class="h-full bg-secondary" style="width: 100%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Analytics Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Ticket Volume Telemetry Line Chart (8 Cols) -->
+            <div class="lg:col-span-8 bg-surface-container-low p-5 rounded-lg flex flex-col justify-between border border-outline-variant/30">
+              <div class="flex items-center justify-between pb-4">
+                <div class="flex flex-col gap-0.5">
+                  <span class="font-medium text-sm text-on-surface">Ticket Volume Trajectory</span>
+                  <span class="font-mono text-[10px] text-outline uppercase tracking-wider">Aggregated Incoming vs Resolved Load</span>
+                </div>
+                <div class="flex items-center gap-1 bg-surface-container p-0.5 rounded-sm font-mono text-[10px]">
+                  <button class="px-2 py-0.5 bg-surface-container-high text-on-surface rounded-sm">7D</button>
+                  <button class="px-2 py-0.5 text-outline hover:text-on-surface transition-colors">30D</button>
+                  <button class="px-2 py-0.5 text-outline hover:text-on-surface transition-colors">ALL</button>
+                </div>
+              </div>
+
+              <!-- Hairline Precision Line Chart -->
+              <div class="w-full relative py-2">
+                <svg class="w-full h-44 overflow-visible" fill="none" viewBox="0 0 700 160">
+                  <line stroke="#454655" stroke-dasharray="2 4" stroke-opacity="0.25" x1="0" x2="700" y1="20" y2="20"></line>
+                  <line stroke="#454655" stroke-dasharray="2 4" stroke-opacity="0.25" x1="0" x2="700" y1="70" y2="70"></line>
+                  <line stroke="#454655" stroke-dasharray="2 4" stroke-opacity="0.25" x1="0" x2="700" y1="120" y2="120"></line>
+                  
+                  <!-- Area Fill for Intake -->
+                  <polygon fill="url(#incomingGrad)" opacity="0.12" points="0,130 100,110 200,120 300,70 400,85 500,40 600,55 700,20 700,150 0,150"></polygon>
+                  
+                  <!-- Resolved Line -->
+                  <polyline points="0,140 100,120 200,130 300,85 400,100 500,55 600,65 700,30" stroke="#66de8c" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2"></polyline>
+                  
+                  <!-- Incoming Line -->
+                  <polyline points="0,130 100,110 200,120 300,70 400,85 500,40 600,55 700,20" stroke="#bec2ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></polyline>
+                  
+                  <circle cx="500" cy="40" fill="#121316" r="3" stroke="#bec2ff" stroke-width="1.5"></circle>
+                  <circle cx="700" cy="20" fill="#121316" r="3" stroke="#bec2ff" stroke-width="1.5"></circle>
+
+                  <defs>
+                    <linearGradient id="incomingGrad" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stop-color="#bec2ff" stop-opacity="0.8"></stop>
+                      <stop offset="100%" stop-color="#bec2ff" stop-opacity="0"></stop>
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="flex justify-between font-mono text-[10px] text-outline/60 pt-1">
+                  <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+                </div>
+              </div>
+
+              <!-- Legend -->
+              <div class="flex items-center justify-between pt-3 mt-3 border-t border-outline-variant/20 font-mono text-[10px]">
+                <div class="flex items-center gap-4">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-0.5 bg-primary"></span>
+                    <span class="text-on-surface-variant">Incoming Intake</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-0.5 bg-secondary"></span>
+                    <span class="text-on-surface-variant">Resolved Queue</span>
+                  </div>
+                </div>
+                <div class="text-outline">
+                  AUTONOMOUS DISPATCH ACTIVE
+                </div>
+              </div>
+            </div>
+
+            <!-- Category Distribution (4 Cols) -->
+            <div class="lg:col-span-4 bg-surface-container-low p-5 rounded-lg flex flex-col justify-between border border-outline-variant/30">
+              <div>
+                <div class="flex items-center justify-between pb-3">
+                  <span class="font-medium text-sm text-on-surface">Queue Distribution</span>
+                  <span class="font-mono text-[10px] text-outline">VOLUME %</span>
+                </div>
+                <p class="text-xs text-outline pb-4">Automatic categorization routing breakdown across Empirial.</p>
+                
+                <div class="space-y-3.5">
+                  <div>
+                    <div class="flex justify-between font-mono text-[11px] mb-1">
+                      <span class="text-on-surface">General Support</span>
+                      <span class="text-outline">45%</span>
+                    </div>
+                    <div class="w-full h-1 bg-surface-container overflow-hidden rounded-full">
+                      <div class="h-full bg-primary" style="width: 45%;"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between font-mono text-[11px] mb-1">
+                      <span class="text-on-surface">Billing &amp; Store</span>
+                      <span class="text-outline">30%</span>
+                    </div>
+                    <div class="w-full h-1 bg-surface-container overflow-hidden rounded-full">
+                      <div class="h-full bg-secondary" style="width: 30%;"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between font-mono text-[11px] mb-1">
+                      <span class="text-on-surface">Report &amp; Appeal</span>
+                      <span class="text-outline">15%</span>
+                    </div>
+                    <div class="w-full h-1 bg-surface-container overflow-hidden rounded-full">
+                      <div class="h-full bg-tertiary" style="width: 15%;"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between font-mono text-[11px] mb-1">
+                      <span class="text-on-surface">Partnership &amp; Media</span>
+                      <span class="text-outline">10%</span>
+                    </div>
+                    <div class="w-full h-1 bg-surface-container overflow-hidden rounded-full">
+                      <div class="h-full bg-outline" style="width: 10%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-4 mt-4 border-t border-outline-variant/20 flex items-center justify-between font-mono text-[10px] text-outline">
+                <span>INTENT ROUTING</span>
+                <span class="text-secondary font-medium">100% SUPABASE SYNC</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Recent Tickets Telemetry Table -->
+          <div class="bg-surface-container-low p-5 rounded-lg border border-outline-variant/30">
+            <div class="flex items-center justify-between pb-4">
+              <div class="flex flex-col gap-0.5">
+                <span class="font-medium text-sm text-on-surface">Recent Support Tickets</span>
+                <span class="font-mono text-[10px] text-outline">Live Supabase Record Feed</span>
+              </div>
+              <button onclick="switchView('all-tickets')" class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-xs text-outline hover:text-on-surface font-mono transition-colors">
+                View all records →
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs font-sans">
+                <thead>
+                  <tr class="font-mono text-[11px] text-outline uppercase tracking-wider border-b border-outline-variant/20">
+                    <th class="py-2 px-3 font-normal">Ticket ID</th>
+                    <th class="py-2 px-3 font-normal">Opener</th>
+                    <th class="py-2 px-3 font-normal">Category</th>
+                    <th class="py-2 px-3 font-normal">Subject</th>
+                    <th class="py-2 px-3 font-normal">Status</th>
+                    <th class="py-2 px-3 font-normal text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-recent-tbody" class="divide-y divide-outline-variant/10">
+                  <tr>
+                    <td colspan="6" class="text-center py-8 text-outline font-mono text-xs">
+                      Loading tickets from Supabase Postgres...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 2: ALL TICKETS (Swiss Hairline Telemetry Grid)      -->
+      <!-- ======================================================== -->
+      <div id="view-all-tickets" class="view-panel hidden flex flex-col w-full">
+        
+        <!-- Viewport Control & Metric Summary Line -->
+        <div class="px-6 pt-6 pb-4 flex flex-col gap-4 bg-surface">
+          <div class="flex items-center justify-between">
+            <div class="flex items-baseline gap-3">
+              <h1 class="text-xl font-semibold text-on-surface tracking-tight">Tickets</h1>
+              <span id="tab-count-total-header" class="text-xs text-outline tracking-tight font-mono">Realtime database records</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="exportTickets()" class="h-8 px-3 flex items-center gap-1.5 rounded-sm bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-xs font-mono transition-colors border border-outline-variant/30">
+                <span class="material-symbols-outlined text-[15px] text-outline">file_download</span>
+                <span>Export JSON</span>
+              </button>
+              <button onclick="switchView('panels')" class="h-8 px-3 flex items-center gap-1.5 rounded-sm bg-primary-container text-on-primary-container hover:opacity-90 text-xs font-medium transition-opacity">
+                <span class="material-symbols-outlined text-[15px]">add</span>
+                <span>New ticket panel</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Architectural Stat Line -->
+          <div class="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-outline font-mono">
+            <span><strong id="tab-count-open" class="text-on-surface font-medium">0</strong> open</span>
+            <span class="text-outline-variant">·</span>
+            <span><strong id="tab-count-claimed" class="text-on-surface font-medium">0</strong> claimed</span>
+            <span class="text-outline-variant">·</span>
+            <span><strong id="tab-count-unclaimed" class="text-on-surface font-medium">0</strong> unclaimed</span>
+            <span class="text-outline-variant">·</span>
+            <span><strong id="tab-count-closed" class="text-on-surface font-medium">0</strong> closed</span>
+          </div>
+        </div>
+
+        <!-- Filtration Ribbon -->
+        <div class="px-6 py-3 bg-surface flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-y border-outline-variant/20">
+          <div class="flex items-center flex-wrap gap-2 flex-1">
+            <!-- Search Input -->
+            <div class="relative flex items-center min-w-[260px]">
+              <span class="material-symbols-outlined absolute left-2.5 text-outline text-[16px]">filter_list</span>
+              <input id="all-tickets-search" class="h-8 w-full bg-surface-container-low pl-8 pr-3 text-on-surface placeholder:text-outline text-xs rounded-sm focus:outline-none focus:bg-surface-container transition-colors border border-outline-variant/30" placeholder="Filter by subject, author, snowflake ID..." type="text"/>
+            </div>
+
+            <!-- Status Fast Buttons -->
+            <div class="flex items-center gap-1 font-mono text-[11px]">
+              <button onclick="filterStatus('all')" class="status-chip active px-2.5 py-1 rounded bg-surface-container-high text-on-surface border border-outline-variant/30" data-status="all">All</button>
+              <button onclick="filterStatus('open')" class="status-chip px-2.5 py-1 rounded bg-surface-container-low text-outline hover:text-on-surface border border-outline-variant/20" data-status="open">Open</button>
+              <button onclick="filterStatus('unclaimed')" class="status-chip px-2.5 py-1 rounded bg-surface-container-low text-outline hover:text-on-surface border border-outline-variant/20" data-status="unclaimed">Unclaimed</button>
+              <button onclick="filterStatus('claimed')" class="status-chip px-2.5 py-1 rounded bg-surface-container-low text-outline hover:text-on-surface border border-outline-variant/20" data-status="claimed">Claimed</button>
+              <button onclick="filterStatus('closed')" class="status-chip px-2.5 py-1 rounded bg-surface-container-low text-outline hover:text-on-surface border border-outline-variant/20" data-status="closed">Closed</button>
+            </div>
+          </div>
+
+          <!-- Reset Filter -->
+          <button onclick="filterStatus('all'); document.getElementById('all-tickets-search').value = ''; renderAllTicketsTable();" class="text-outline hover:text-on-surface text-xs font-mono transition-colors self-end md:self-auto">
+            Reset filters
+          </button>
+        </div>
+
+        <!-- Telemetry Table (Strict Swiss Minimalist Borders) -->
+        <div class="w-full overflow-x-auto bg-surface">
+          <table class="w-full text-left text-xs font-sans">
+            <thead>
+              <tr class="font-mono text-[11px] text-outline uppercase tracking-wider bg-surface-container-lowest border-b border-outline-variant/30 select-none">
+                <th class="py-2.5 px-4 font-normal">ID</th>
+                <th class="py-2.5 px-4 font-normal">Opener</th>
+                <th class="py-2.5 px-4 font-normal">Category</th>
+                <th class="py-2.5 px-4 font-normal">Subject &amp; Details</th>
+                <th class="py-2.5 px-4 font-normal">Assignee</th>
+                <th class="py-2.5 px-4 font-normal">Status</th>
+                <th class="py-2.5 px-4 font-normal">Created</th>
+                <th class="py-2.5 px-4 font-normal text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="all-tickets-tbody" class="divide-y divide-outline-variant/15">
+              <tr>
+                <td colspan="8" class="text-center py-16 text-outline font-mono text-xs">
+                  Loading tickets...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 3: TICKET DETAIL (Discord Chat Stream & Audit Rail) -->
+      <!-- ======================================================== -->
+      <div id="view-ticket-detail" class="view-panel hidden flex flex-col w-full">
+        
+        <!-- Command & State Ribbon -->
+        <div class="w-full bg-surface-container-lowest px-6 py-3 flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/30">
+          <div class="flex items-center gap-3 min-w-0">
+            <button onclick="switchView('all-tickets')" class="flex items-center gap-1 text-on-surface-variant hover:text-on-surface transition-colors text-xs font-mono">
+              <span class="material-symbols-outlined text-[15px]">arrow_back</span>
+              <span>Tickets</span>
+            </button>
+            <div class="w-px h-3.5 bg-outline-variant"></div>
+            <div class="flex items-center gap-2 min-w-0">
+              <span id="detail-ticket-id" class="font-mono font-semibold text-on-surface text-sm">#0000</span>
+              <span id="detail-ticket-subject" class="font-medium text-on-surface truncate text-xs max-w-sm">Support Request</span>
+            </div>
+            <div class="flex items-center gap-2 text-outline font-mono text-[11px]">
+              <span id="detail-opened-by">Opened by user</span>
+              <span class="text-outline-variant">/</span>
+              <span id="detail-channel-name">#ticket</span>
+            </div>
+          </div>
+
+          <!-- Actions Palette -->
+          <div class="flex items-center gap-2">
+            <button id="detail-claim-btn" onclick="claimActiveTicket()" class="px-3 py-1 rounded bg-surface-container hover:bg-surface-container-high transition-colors font-mono text-xs text-on-surface flex items-center gap-1.5 border border-outline-variant/30">
+              <span class="material-symbols-outlined text-[15px] text-primary">person_add</span>
+              <span>Claim</span>
+            </button>
+            <button id="detail-close-btn" onclick="closeActiveTicket()" class="px-3 py-1 rounded bg-surface-container hover:bg-surface-container-high transition-colors font-mono text-xs text-error hover:text-error flex items-center gap-1.5 border border-outline-variant/30">
+              <span class="material-symbols-outlined text-[15px]">lock</span>
+              <span>Close ticket</span>
+            </button>
+            <a id="detail-transcript-btn" href="#" target="_blank" class="hidden px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high font-mono text-xs text-outline hover:text-on-surface transition-colors border border-outline-variant/30">
+              <span>Transcript HTML</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Split Grid (Stream & Rail) -->
+        <div class="w-full grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-6rem)]">
+          
+          <!-- Left Column: Discord Stream Transcript (8 Cols) -->
+          <div class="lg:col-span-8 xl:col-span-9 bg-surface-container-lowest flex flex-col justify-between p-6 border-r border-outline-variant/30">
+            <div class="flex flex-col gap-4 w-full max-w-4xl">
+              
+              <!-- Messages Container -->
+              <div id="detail-messages-container" class="flex flex-col gap-3 max-h-[65vh] overflow-y-auto pr-2">
+                <!-- Rendered dynamically -->
+              </div>
+
+            </div>
+
+            <!-- Staff Reply Input Bar -->
+            <div class="mt-6 pt-4 border-t border-outline-variant/30 w-full max-w-4xl">
+              <div class="flex items-center gap-2">
+                <input id="detail-reply-input" class="flex-1 h-10 px-3 bg-surface-container text-on-surface placeholder:text-outline text-xs rounded border border-outline-variant/30 focus:outline-none focus:border-primary-container transition-colors" placeholder="Type a staff message to send into Discord ticket channel... (Press Enter to Send)" type="text"/>
+                <button onclick="sendStaffMessage()" class="h-10 px-4 rounded bg-primary-container hover:opacity-90 text-on-primary-container text-xs font-medium transition-opacity flex items-center gap-1.5 shadow-sm">
+                  <span class="material-symbols-outlined text-[16px]">send</span>
+                  <span>Send</span>
+                </button>
+              </div>
+              <div class="flex items-center justify-between pt-2 font-mono text-[11px] text-outline">
+                <span>Dispatches via Discord Bot Gateway as Staff</span>
+                <span>Synced with Supabase Postgres</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Details & Audit Drawer (4 Cols) -->
+          <div class="lg:col-span-4 xl:col-span-3 bg-surface-container-low p-6 flex flex-col gap-6">
+            
+            <!-- Diagnostics Box -->
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Ticket Overview</span>
+                <span class="font-mono text-[10px] text-outline">SHARD 01</span>
+              </div>
+              <div class="rounded bg-surface-container p-3 flex flex-col gap-2 font-mono text-xs border border-outline-variant/20">
+                <div class="flex items-center justify-between py-0.5">
+                  <span class="text-outline">Ticket ID</span>
+                  <span id="rail-ticket-id" class="text-on-surface font-semibold">--</span>
+                </div>
+                <div class="flex items-center justify-between py-0.5">
+                  <span class="text-outline">Channel ID</span>
+                  <span id="rail-channel-id" class="text-on-surface truncate max-w-[140px]">--</span>
+                </div>
+                <div class="flex items-center justify-between py-0.5">
+                  <span class="text-outline">Status</span>
+                  <span id="rail-status" class="text-secondary font-semibold">--</span>
+                </div>
+                <div class="flex items-center justify-between py-0.5">
+                  <span class="text-outline">Category</span>
+                  <span id="rail-category" class="text-on-surface">--</span>
+                </div>
+                <div class="flex items-center justify-between py-0.5">
+                  <span class="text-outline">Created</span>
+                  <span id="rail-created" class="text-on-surface">--</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- People / Participants Box -->
+            <div class="flex flex-col gap-2">
+              <span class="font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Participants</span>
+              <div class="rounded bg-surface-container p-3 flex flex-col gap-3 border border-outline-variant/20">
+                <!-- Opener User -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <img id="rail-user-avatar" class="w-7 h-7 rounded-full bg-surface-container-high object-cover shrink-0" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Opener"/>
+                    <div class="flex flex-col min-w-0">
+                      <span id="rail-user-name" class="text-xs text-on-surface truncate font-medium">@user</span>
+                      <span class="font-mono text-[10px] text-outline">Ticket Opener</span>
+                    </div>
+                  </div>
+                  <span id="rail-user-id" class="font-mono text-[10px] text-outline truncate max-w-[80px]">--</span>
+                </div>
+                <div class="w-full h-px bg-outline-variant/20"></div>
+                <!-- Staff Assignee -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-7 h-7 rounded-full bg-primary-container/20 flex items-center justify-center font-mono text-[11px] text-primary shrink-0">
+                      ST
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                      <span id="rail-staff-name" class="text-xs text-primary font-medium truncate">Unassigned</span>
+                      <span class="font-mono text-[10px] text-outline">Assignee</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Internal Notes -->
+            <div class="flex flex-col gap-2 flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Internal Notes</span>
+                <span class="font-mono text-[10px] text-outline">Staff only</span>
+              </div>
+              <div class="rounded bg-surface-container p-3 flex flex-col gap-2 border border-outline-variant/20">
+                <p class="text-xs text-on-surface-variant leading-relaxed">
+                  Messages dispatched from this console post directly into Discord in real-time. Closing the ticket will automatically generate and store the HTML transcript in Supabase.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 4: TICKET PANELS (Embed Customizer & Dispatcher)     -->
+      <!-- ======================================================== -->
+      <div id="view-panels" class="view-panel hidden flex flex-col w-full p-6 space-y-6">
+        <div>
+          <h1 class="text-xl font-semibold text-on-surface tracking-tight">Ticket Panels</h1>
+          <p class="text-xs text-outline mt-0.5">Design and dispatch interactive ticket creation embeds to your Discord server.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl">
+          <!-- Form (6 Cols) -->
+          <div class="lg:col-span-6 bg-surface-container-low p-6 rounded-lg border border-outline-variant/30 space-y-4">
+            <div class="space-y-1">
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Embed Title</label>
+              <input type="text" id="panel-title-input" class="w-full h-9 px-3 bg-surface-container text-on-surface text-xs rounded border border-outline-variant/30 focus:outline-none focus:border-primary-container" value="👑 Empirial Support Tickets"/>
+            </div>
+
+            <div class="space-y-1">
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Embed Description</label>
+              <textarea id="panel-desc-input" rows="4" class="w-full p-3 bg-surface-container text-on-surface text-xs rounded border border-outline-variant/30 focus:outline-none focus:border-primary-container resize-none leading-relaxed">Welcome to the **Empirial** Support Center.
+
+Select a category below to open a private ticket. Our staff team will assist you shortly.</textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label class="block font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Embed Color</label>
+                <div class="flex items-center gap-2">
+                  <input type="color" id="panel-color-picker" value="#5865f2" class="w-8 h-8 rounded bg-transparent cursor-pointer border border-outline-variant/30"/>
+                  <input type="text" id="panel-color-text" value="#5865f2" class="flex-1 h-8 px-2 bg-surface-container text-on-surface font-mono text-xs rounded border border-outline-variant/30 focus:outline-none"/>
+                </div>
+              </div>
+
+              <div class="space-y-1">
+                <label class="block font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Button Text</label>
+                <input type="text" id="panel-btn-text" value="Open Ticket" class="w-full h-8 px-3 bg-surface-container text-on-surface text-xs rounded border border-outline-variant/30 focus:outline-none"/>
+              </div>
+            </div>
+
+            <div class="space-y-1 pt-2">
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Target Discord Channel</label>
+              <select id="panel-target-channel" class="w-full h-9 px-3 bg-surface-container text-on-surface text-xs rounded border border-outline-variant/30 focus:outline-none focus:border-primary-container">
+                <option value="">Loading Discord channels...</option>
+              </select>
+            </div>
+
+            <div class="pt-4 border-t border-outline-variant/20 flex items-center justify-between">
+              <button onclick="syncCommands()" class="px-3 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-outline hover:text-on-surface font-mono text-xs transition-colors border border-outline-variant/30">
+                Sync /commands
+              </button>
+              <button onclick="deployPanelToDiscord()" class="px-4 py-2 rounded bg-primary-container hover:opacity-90 text-on-primary-container text-xs font-medium transition-opacity shadow-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-[16px]">send</span>
+                <span>Deploy to Discord</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Discord Embed Preview (6 Cols) -->
+          <div class="lg:col-span-6 bg-surface-container-low p-6 rounded-lg border border-outline-variant/30 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-3">
+                <span class="font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Interactive Preview</span>
+                <span class="font-mono text-[10px] text-outline">Discord Client Emulation</span>
+              </div>
+
+              <!-- Discord Message Container -->
+              <div class="bg-[#313338] p-4 rounded text-[#dbdee1] font-sans text-xs">
+                <div class="flex items-start gap-3">
+                  <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white shrink-0">
+                    👑
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5 mb-1">
+                      <span class="font-semibold text-white">Empirial</span>
+                      <span class="px-1 py-0.2 rounded bg-primary-container text-white font-mono text-[9px]">BOT</span>
+                    </div>
+
+                    <!-- Embed Card -->
+                    <div id="preview-panel-card" class="bg-[#2b2d31] p-3 rounded border-l-4 border-[#5865f2] space-y-2 mt-1">
+                      <h3 id="preview-panel-title" class="font-bold text-white text-sm">👑 Empirial Support Tickets</h3>
+                      <p id="preview-panel-desc" class="text-xs text-[#dbdee1] whitespace-pre-line leading-relaxed">
+                        Welcome to the **Empirial** Support Center.
+                        Select a category below to open a private ticket.
+                      </p>
+                      <div class="pt-1 text-[10px] text-[#949ba4] font-mono">
+                        Empirial Support System • Private &amp; Secure
+                      </div>
+                    </div>
+
+                    <!-- Button Emulation -->
+                    <div class="pt-3 flex gap-2">
+                      <button id="preview-panel-btn" class="px-4 py-1.5 rounded bg-[#5865f2] text-white font-medium text-xs flex items-center gap-1.5 pointer-events-none">
+                        <span>✉️</span>
+                        <span>Open Ticket</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-3 font-mono text-[10px] text-outline text-right">
+              Renders using standard Discord component actions
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 5: SETTINGS (Guild Config & System Tuning)           -->
+      <!-- ======================================================== -->
+      <div id="view-settings" class="view-panel hidden flex flex-col w-full p-6 space-y-6">
+        <div>
+          <h1 class="text-xl font-semibold text-on-surface tracking-tight">System Settings</h1>
+          <p class="text-xs text-outline mt-0.5">Configure Discord category routing, roles, limits, and Supabase database parameters.</p>
+        </div>
+
+        <form id="system-config-form" class="bg-surface-container-low p-6 rounded-lg border border-outline-variant/30 max-w-2xl space-y-4">
+          <div class="space-y-1">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Ticket Channel Category</label>
+            <select id="config-category" class="w-full h-9 px-3 bg-surface-container text-on-surface text-xs rounded border border-outline-variant/30 focus:outline-none focus:border-primary-container">
+              <option value="">Auto-create "🎫 EMPIRIAL TICKETS"</option>
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Support Staff Role</label>
+            <select id="config-role" class="w-full h-9 px-3 bg-surface-container text-on-surface text-xs rounded border border-outline-variant/30 focus:outline-none focus:border-primary-container">
+              <option value="">Server Admins Only</option>
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Logs Channel</label>
+            <select id="config-logs" class="w-full h-9 px-3 bg-surface-container text-on-surface text-xs rounded border border-outline-variant/30 focus:outline-none focus:border-primary-container">
+              <option value="">Disabled (No log channel)</option>
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-outline font-medium">Max Open Tickets Per User</label>
+            <input type="number" id="config-limit" min="1" max="10" value="1" class="w-full h-9 px-3 bg-surface-container text-on-surface text-xs rounded border border-outline-variant/30 focus:outline-none"/>
+          </div>
+
+          <div class="pt-4 border-t border-outline-variant/20 flex justify-end">
+            <button type="submit" class="px-5 py-2 rounded bg-primary-container hover:opacity-90 text-on-primary-container text-xs font-medium transition-opacity shadow-sm">
+              Save Configuration
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 6: ACCESS CONTROL & AUDIT                           -->
+      <!-- ======================================================== -->
+      <div id="view-access" class="view-panel hidden flex flex-col w-full p-6 space-y-6">
+        <div>
+          <h1 class="text-xl font-semibold text-on-surface tracking-tight">Access Control &amp; RBAC</h1>
+          <p class="text-xs text-outline mt-0.5">Active Discord administrator sessions and audit trail recorded in Supabase.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+          <!-- Session Card -->
+          <div class="bg-surface-container-low p-6 rounded-lg border border-outline-variant/30 space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-white">
+                <span class="material-symbols-outlined text-[20px]">shield</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-sm text-on-surface">Authenticated Node</span>
+                <span class="font-mono text-[11px] text-secondary">Verified Discord Admin</span>
+              </div>
+            </div>
+
+            <div class="space-y-2 font-mono text-xs text-outline pt-2 border-t border-outline-variant/20">
+              <div class="flex justify-between py-1">
+                <span>Target Guild:</span>
+                <span class="text-on-surface">Empirial (1439121933001035808)</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span>Privilege Scope:</span>
+                <span class="text-on-surface">ADMINISTRATOR / MANAGE_GUILD</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span>Database:</span>
+                <span class="text-secondary font-medium">Supabase Postgres Active</span>
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <button onclick="logout()" class="w-full h-9 rounded bg-surface-container-high hover:bg-surface-bright text-error font-mono text-xs transition-colors flex items-center justify-center gap-2 border border-outline-variant/30">
+                <span class="material-symbols-outlined text-[15px]">logout</span>
+                <span>Revoke Current Session</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS (Fixed Bottom-Right) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+  <!-- DASHBOARD CONTROLLER SCRIPT -->
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>
