@@ -5,10 +5,10 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/raw-transcripts/(.*)", "destination": "/api/index.js" },
-    { "source": "/login", "destination": "/src/public/login.html" },
-    { "source": "/access-denied", "destination": "/src/public/access-denied.html" },
-    { "source": "/dashboard", "destination": "/src/public/index.html" },
-    { "source": "/", "destination": "/src/public/index.html" },
+    { "source": "/login", "destination": "/src/public/login" },
+    { "source": "/access-denied", "destination": "/src/public/access-denied" },
+    { "source": "/dashboard", "destination": "/src/public/index" },
+    { "source": "/", "destination": "/src/public/index" },
     { "source": "/(.*)", "destination": "/src/public/$1" }
   ]
 }
