@@ -4,5 +4,6 @@ node_modules/
 .vercel/
 stitch_export/
 stitch_export_2/
+stitch_export_3/
 data/transcripts/*.html
 *.log

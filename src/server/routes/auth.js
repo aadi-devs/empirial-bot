@@ -12,7 +12,9 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET || '';
 async function authMiddleware(req, res, next) {
   try {
     const sessionId = req.cookies?.empirial_session ||
-      (req.headers['authorization'] ? req.headers['authorization'].replace('Bearer ', '') : null);
+      (req.headers['authorization'] ? req.headers['authorization'].replace('Bearer ', '') : null) ||
+      req.query?.token ||
+      req.query?.session;
 
     if (!sessionId) {
       return res.status(401).json({ error: 'Unauthorized. Please log in with Discord.', authenticated: false });
@@ -92,7 +94,9 @@ function checkAdminPermissions(guilds, targetServerName = 'Empirial') {
 router.get('/me', async (req, res) => {
   try {
     const sessionId = req.cookies?.empirial_session ||
-      (req.headers['authorization'] ? req.headers['authorization'].replace('Bearer ', '') : null);
+      (req.headers['authorization'] ? req.headers['authorization'].replace('Bearer ', '') : null) ||
+      req.query?.token ||
+      req.query?.session;
 
     if (!sessionId) {
       return res.json({ authenticated: false });
@@ -244,6 +248,7 @@ router.get('/discord/callback', async (req, res) => {
         const res = await fetch('/api/auth/discord/verify-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ token, code })
         });
         const data = await res.json();

@@ -8,11 +8,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com" rel="preconnect"/>
   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
     @layer base {
       html, body { margin:0; padding:0; }
-      body { overscroll-behavior:none; }
+      body { overscroll-behavior:none; font-family: 'Geist', sans-serif; }
+      main > :first-child { margin-top:0 !important; }
+      main > :last-child { margin-bottom:0 !important; }
     }
     ::-webkit-scrollbar { display:none; }
   </style>
@@ -23,233 +25,162 @@
       theme: {
         extend: {
           colors: {
-            'surface-container-high': '#282a2f',
-            'surface': '#111318',
-            'primary': '#bec2ff',
-            'primary-fixed': '#e0e0ff',
-            'on-tertiary-container': '#fffdff',
-            'surface-container': '#1d2024',
-            'surface-container-highest': '#33353a',
-            'on-secondary-fixed-variant': '#005228',
-            'surface-variant': '#33353a',
-            'on-secondary-container': '#003115',
-            'background': '#111318',
-            'on-tertiary': '#422d00',
-            'on-tertiary-fixed': '#271900',
-            'inverse-on-surface': '#2e3035',
-            'on-primary-fixed': '#000569',
-            'error': '#ffb4ab',
-            'on-primary': '#000da4',
-            'surface-tint': '#bec2ff',
-            'on-surface': '#e2e2e8',
-            'surface-bright': '#37393e',
-            'surface-container-low': '#191c20',
-            'on-primary-container': '#fffdff',
-            'on-secondary-fixed': '#00210c',
-            'secondary-fixed-dim': '#66de8c',
-            'on-tertiary-fixed-variant': '#5e4200',
-            'on-error': '#690005',
-            'secondary-fixed': '#83fba5',
+            'surface': '#121316',
+            'surface-dim': '#121316',
+            'surface-bright': '#38393c',
+            'surface-container-lowest': '#0d0e11',
+            'surface-container-low': '#1b1b1f',
+            'surface-container': '#1f1f23',
+            'surface-container-high': '#292a2d',
+            'surface-container-highest': '#343538',
+            'on-surface': '#e3e2e6',
             'on-surface-variant': '#c6c5d7',
-            'surface-container-lowest': '#0c0e13',
-            'tertiary': '#fbbc3c',
-            'error-container': '#93000a',
-            'on-error-container': '#ffdad6',
-            'secondary-container': '#23a55a',
-            'secondary': '#66de8c',
-            'surface-dim': '#111318',
-            'outline-variant': '#454655',
-            'inverse-primary': '#3f4cda',
             'outline': '#8f8fa0',
-            'on-background': '#e2e2e8',
-            'primary-fixed-dim': '#bec2ff',
+            'outline-variant': '#454655',
+            'primary': '#bec2ff',
+            'on-primary': '#000da4',
             'primary-container': '#5865f2',
-            'tertiary-container': '#9a6d00',
-            'tertiary-fixed-dim': '#fbbc3c',
-            'on-primary-fixed-variant': '#222fc2',
-            'inverse-surface': '#e2e2e8',
-            'tertiary-fixed': '#ffdea8',
-            'on-secondary': '#003919'
-          },
-          borderRadius: {
-            'DEFAULT': '0.125rem',
-            'lg': '0.25rem',
-            'xl': '0.5rem',
-            'full': '0.75rem'
-          },
-          spacing: {
-            'space-xs': '0.25rem',
-            'gutter': '1rem',
-            'space-xl': '2rem',
-            'gutter-compact': '0.5rem',
-            'space-md': '1rem',
-            'margin': '1.5rem',
-            'margin-mobile': '1rem',
-            'space-sm': '0.5rem',
-            'space-lg': '1.5rem'
+            'on-primary-container': '#fffdff',
+            'secondary': '#66de8c',
+            'error': '#ffb4ab',
+            'error-container': '#93000a',
+            'background': '#121316',
+            'on-background': '#e3e2e6'
           },
           fontFamily: {
-            'headline-xl': ['Noto Sans'],
-            'label-sm': ['Noto Sans'],
-            'headline-lg': ['Noto Sans'],
-            'code-sm': ['JetBrains Mono'],
-            'label-md': ['Noto Sans'],
-            'body-sm': ['Noto Sans'],
-            'body-lg': ['Noto Sans'],
-            'headline-md': ['Noto Sans'],
-            'code-md': ['JetBrains Mono'],
-            'body-md': ['Noto Sans']
+            'sans': ['Geist', 'sans-serif'],
+            'mono': ['JetBrains Mono', 'monospace']
           }
         }
       }
     };
   </script>
 </head>
-<body class="bg-surface-container-lowest text-on-surface font-body-md text-body-md min-h-screen relative flex flex-col justify-between selection:bg-primary-container selection:text-on-primary-container">
-  <div class="pointer-events-none fixed inset-0 flex items-center justify-center opacity-[0.03] select-none">
+<body class="bg-surface-container-lowest text-on-surface font-sans text-sm min-h-screen relative flex flex-col justify-between selection:bg-primary-container selection:text-on-primary-container">
+  <!-- Subtle Ambient Shield Watermark -->
+  <div class="pointer-events-none fixed inset-0 flex items-center justify-center opacity-[0.025] select-none">
     <span class="material-symbols-outlined text-[380px] text-on-surface">shield</span>
   </div>
 
-  <header class="w-full pt-space-lg px-margin flex items-center justify-between z-10">
-    <div class="flex items-center gap-space-sm">
-      <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container font-headline-md text-headline-md font-bold shadow-[0_2px_4px_rgba(0,0,0,0.2)]">
+  <!-- Top Minimalist Header -->
+  <header class="w-full pt-6 px-8 flex items-center justify-between z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-on-primary-container font-semibold shadow-sm">
         <span class="material-symbols-outlined text-[18px]">smart_toy</span>
       </div>
       <div class="flex flex-col">
-        <div class="flex items-center gap-space-xs">
-          <span class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">Empirial</span>
-          <span class="px-1.5 py-0.5 rounded-lg bg-primary-container text-on-primary-container font-label-sm text-label-sm uppercase tracking-wider">Bot</span>
+        <div class="flex items-center gap-1.5">
+          <span class="font-semibold text-on-surface tracking-tight">Empirial</span>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-surface-container border border-outline-variant/30 text-outline">v2.4</span>
         </div>
-        <span class="font-code-sm text-code-sm text-outline">v4.18.2</span>
+        <span class="font-mono text-[11px] text-outline">Core Systems</span>
       </div>
     </div>
-    <div class="flex items-center gap-space-xs text-outline font-label-md text-label-md">
-      <span class="w-2 h-2 rounded-full bg-secondary"></span>
-      <span>API Online</span>
+    <div class="flex items-center gap-2 text-outline font-mono text-[11px]">
+      <span class="w-2 h-2 rounded-full bg-error"></span>
+      <span>Access Restricted</span>
     </div>
   </header>
 
-  <main class="w-full flex-1 flex items-center justify-center p-margin z-10">
-    <div class="flex flex-col w-full items-center justify-center py-space-xl">
-      <!-- Card Container: Strict Discord Modal/Panel Aesthetic (500px width) -->
-      <div class="w-full max-w-[500px] bg-surface-container rounded-xl shadow-2xl overflow-hidden flex flex-col border border-outline-variant/30">
-        <!-- Top Accent Bar: Error / Warning Red Tonal Accent Strip -->
-        <div class="h-1 w-full bg-error-container"></div>
+  <!-- Central Content -->
+  <main class="w-full flex-1 flex items-center justify-center p-6 z-10">
+    <div class="flex flex-col w-full max-w-xl mx-auto items-center justify-center py-6">
 
-        <!-- Active User Identity Chip Strip -->
-        <div class="bg-surface-container-low px-space-lg py-space-sm flex items-center justify-between border-b border-outline-variant/20">
-          <div class="flex items-center gap-space-sm min-w-0">
-            <!-- Discord Avatar with Status Indicator -->
-            <div class="relative w-9 h-9 rounded-full bg-surface-container-highest flex-shrink-0 flex items-center justify-center overflow-hidden">
-              <img id="userAvatar" class="w-full h-full object-cover" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar"/>
-              <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-outline ring-2 ring-surface-container-low"></span>
-            </div>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-1">
-                <span id="userHandle" class="font-headline-md text-headline-md text-on-surface font-semibold truncate leading-none">@User</span>
-                <span id="userDiscriminator" class="font-code-sm text-code-sm text-outline leading-none">#0000</span>
-              </div>
-              <span id="userIdText" class="font-code-sm text-code-sm text-outline truncate pt-0.5">ID: —</span>
-            </div>
+      <!-- Minimalist Session Chip -->
+      <div class="w-full flex items-center justify-between bg-surface-container-low px-4 py-2.5 rounded-xl shadow-sm mb-4 border border-outline-variant/30">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden shrink-0 border border-outline-variant/30">
+            <img id="userAvatar" class="w-full h-full object-cover hidden" src="" alt="Avatar"/>
+            <span id="userInitials" class="font-mono text-xs text-on-surface font-medium select-none">?</span>
           </div>
-          <!-- Current Assigned Role Pill -->
-          <div class="flex-shrink-0 flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-highest text-outline font-label-sm text-label-sm">
-            <span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
-            <span>@everyone</span>
+          <div class="flex flex-col min-w-0">
+            <div class="flex items-center gap-1">
+              <span id="userHandle" class="text-sm font-semibold text-on-surface truncate leading-tight">@User</span>
+              <span id="userDiscriminator" class="font-mono text-xs text-outline leading-tight">#0000</span>
+            </div>
+            <span id="userIdText" class="font-mono text-[11px] text-outline truncate">Snowflake: —</span>
           </div>
         </div>
+        <div class="flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded bg-surface-container font-mono text-[11px] text-outline border border-outline-variant/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+          <span>@everyone</span>
+        </div>
+      </div>
 
-        <!-- Main Card Body -->
-        <div class="p-space-lg flex flex-col items-center text-center">
-          <!-- Warning / Shield Visual Icon -->
-          <div class="w-14 h-14 rounded-full bg-error-container/20 flex items-center justify-center mb-space-md">
-            <span class="material-symbols-outlined text-[30px] text-error" style="font-variation-settings: 'FILL' 1;">gpp_bad</span>
+      <!-- Primary Access Denied Card -->
+      <div class="w-full bg-surface-container-low rounded-xl p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden border border-outline-variant/30">
+        
+        <!-- Restrained Status Icon -->
+        <div class="relative w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center mb-4 border border-outline-variant/30 text-error">
+          <span class="material-symbols-outlined text-[24px]">lock</span>
+        </div>
+
+        <!-- Headers -->
+        <h1 class="text-xl font-semibold text-on-surface tracking-tight mb-2">
+          Access Denied
+        </h1>
+        <p class="text-sm text-outline max-w-md mx-auto mb-6 leading-relaxed">
+          Your Discord account does not have permission to access the Empirial staff console. Contact a server administrator to assign the required staff role.
+        </p>
+
+        <!-- Permission Breakdown Matrix -->
+        <div class="w-full bg-surface-container-lowest rounded-lg p-4 mb-6 text-left font-mono text-xs border border-outline-variant/20 divide-y divide-outline-variant/15">
+          <div class="flex items-center justify-between pb-2.5">
+            <span class="text-outline uppercase tracking-wider text-[11px]">Target Guild</span>
+            <span class="text-on-surface font-medium">Empirial <span class="text-outline">(ID: 1439121933001035808)</span></span>
           </div>
-
-          <!-- Heading -->
-          <h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight mb-space-xs font-bold">
-            Access denied
-          </h1>
-
-          <!-- Mandatory Copy Verbatim -->
-          <p class="font-body-md text-body-md text-on-surface-variant max-w-[420px] mb-space-lg">
-            Your Discord account doesn't have access to this dashboard. Ask a server admin to add your role.
-          </p>
-
-          <!-- Technical Permission Diagnostic Box -->
-          <div class="w-full bg-surface-container-lowest rounded-lg p-space-md text-left flex flex-col gap-space-sm mb-space-lg border border-outline-variant/30">
-            <div class="flex items-center justify-between pb-2 border-b border-outline-variant/20">
-              <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Target Node</span>
-              <div class="flex items-center gap-1.5 font-code-sm text-code-sm text-on-surface">
-                <span class="material-symbols-outlined text-[14px] text-outline">dns</span>
-                <span>Empirial</span>
-                <span class="text-outline">(ID: 1572574664063193179)</span>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Required Privileges</span>
-              <div class="flex flex-wrap gap-1.5 pt-0.5">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm border border-outline-variant/30">
-                  <span class="w-1.5 h-1.5 rounded-full bg-error"></span>Admin (ADMINISTRATOR)
-                </span>
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm border border-outline-variant/30">
-                  <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>Manage Server (MANAGE_GUILD)
-                </span>
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm border border-outline-variant/30">
-                  <span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>Server Owner
-                </span>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-1 pt-1">
-              <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Missing Permission</span>
-              <div class="flex items-center gap-2">
-                <code id="missingPermCode" class="font-code-sm text-code-sm bg-surface-container text-error px-2 py-0.5 rounded border border-error/30 font-semibold">MANAGE_GUILD</code>
-                <span class="font-body-sm text-body-sm text-outline">or server admin privileges in Empirial</span>
-              </div>
+          <div class="flex items-center justify-between py-2.5">
+            <span class="text-outline uppercase tracking-wider text-[11px]">Required Roles</span>
+            <div class="flex items-center gap-1.5">
+              <span class="text-on-surface font-medium">Administrator, Server Owner</span>
             </div>
           </div>
-
-          <!-- Action Cluster -->
-          <div class="w-full flex flex-col gap-space-sm">
-            <!-- Primary Action: Clean Discord-Style Neutral / Exit Button -->
-            <button class="w-full h-10 px-space-md rounded bg-surface-container-highest hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center justify-center gap-space-xs transition-colors duration-150 cursor-pointer" id="logout-btn" type="button">
-              <span class="material-symbols-outlined text-[18px]">logout</span>
-              <span>Log out</span>
-            </button>
-
-            <!-- Secondary Actions -->
-            <div class="flex items-center justify-between pt-space-xs px-1">
-              <button class="font-label-md text-label-md text-outline hover:text-on-surface flex items-center gap-1 transition-colors duration-150 cursor-pointer" id="switch-account-btn" type="button">
-                <span class="material-symbols-outlined text-[16px]">switch_account</span>
-                <span>Switch Discord account</span>
-              </button>
-              <a class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" href="https://discord.com" target="_blank">
-                <span>Open Discord</span>
-                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
-              </a>
+          <div class="flex items-center justify-between pt-2.5">
+            <span class="text-outline uppercase tracking-wider text-[11px]">Missing Privilege</span>
+            <div class="flex items-center gap-1.5 text-error">
+              <span class="material-symbols-outlined text-[14px]">remove_circle</span>
+              <span id="missingPermCode" class="font-medium tracking-tight">MANAGE_GUILD</span>
             </div>
           </div>
         </div>
 
-        <!-- System Diagnostic Sub-Footer -->
-        <div class="bg-surface-container-low px-space-lg py-2 flex items-center justify-between font-code-sm text-code-sm text-outline border-t border-outline-variant/20">
-          <div class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
-            <span>AUTH_ERR_MISSING_ROLES</span>
-          </div>
-          <span>RBAC Node: <span class="text-on-surface font-semibold">Empirial</span></span>
+        <!-- Actions Hierarchy -->
+        <div class="w-full flex flex-col sm:flex-row items-center gap-2.5 mb-3">
+          <button class="w-full sm:flex-1 h-9 px-4 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-mono text-xs transition-colors flex items-center justify-center gap-2 focus:outline-none cursor-pointer border border-outline-variant/30" id="switch-account-btn" type="button">
+            <span class="material-symbols-outlined text-[16px]">sync_alt</span>
+            <span>Switch Discord Account</span>
+          </button>
+          <a class="w-full sm:w-auto h-9 px-4 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-mono text-xs transition-colors flex items-center justify-center gap-2 focus:outline-none border border-outline-variant/30" href="https://discord.com" rel="noopener noreferrer" target="_blank">
+            <span>Open Discord</span>
+            <span class="material-symbols-outlined text-[14px] text-outline">open_in_new</span>
+          </a>
         </div>
+
+        <div class="flex items-center justify-center pt-2">
+          <button class="font-mono text-xs text-outline hover:text-on-surface transition-colors py-1 px-2 focus:outline-none flex items-center gap-1.5 cursor-pointer" id="logout-btn" type="button">
+            <span class="material-symbols-outlined text-[15px]">logout</span>
+            <span>Log out</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Telemetry Footnote -->
+      <div class="mt-4 flex items-center justify-center gap-2 text-outline font-mono text-[11px] select-none">
+        <span class="text-error/80">ERR_INSUFFICIENT_ROLES</span>
+        <span>·</span>
+        <span>Node: Empirial</span>
+        <span>·</span>
+        <span>RBAC Enforced</span>
       </div>
     </div>
   </main>
 
-  <footer class="w-full pb-space-lg px-margin flex flex-col sm:flex-row items-center justify-between gap-space-sm z-10">
-    <span class="font-body-sm text-body-sm text-outline">© 2026 Empirial Core Systems. Discord-Native Management Node.</span>
-    <div class="flex items-center gap-space-md font-label-md text-label-md text-outline">
-      <span class="text-secondary flex items-center gap-1">
-        <span class="w-2 h-2 rounded-full bg-secondary"></span> Supabase Connected
+  <!-- Global Footer -->
+  <footer class="w-full pb-6 px-8 flex flex-col sm:flex-row items-center justify-between gap-2 z-10 font-sans text-xs text-outline">
+    <span>© 2026 Empirial Core Systems. Discord-Native Management Node.</span>
+    <div class="flex items-center gap-4 font-mono text-[11px]">
+      <span class="text-secondary flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Cluster Operational
       </span>
     </div>
   </footer>
@@ -265,6 +196,7 @@
 
       if (user) {
         document.getElementById('userHandle').textContent = `@${user}`;
+        document.getElementById('userInitials').textContent = user.substring(0, 2).toUpperCase();
       }
       if (discriminator && discriminator !== '0') {
         document.getElementById('userDiscriminator').textContent = `#${discriminator}`;
@@ -272,29 +204,33 @@
         document.getElementById('userDiscriminator').textContent = '';
       }
       if (userId) {
-        document.getElementById('userIdText').textContent = `ID: ${userId}`;
+        document.getElementById('userIdText').textContent = `Snowflake: ${userId}`;
       }
       if (avatar && userId) {
-        document.getElementById('userAvatar').src = `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png`;
+        const img = document.getElementById('userAvatar');
+        img.src = `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png`;
+        img.classList.remove('hidden');
+        document.getElementById('userInitials').classList.add('hidden');
       }
       if (missing) {
         document.getElementById('missingPermCode').textContent = missing;
       }
 
-      // Log out
+      // Log out button
       document.getElementById('logout-btn')?.addEventListener('click', async function() {
         this.classList.add('opacity-70');
-        this.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>Logging out...</span>';
+        this.innerHTML = '<span class="material-symbols-outlined text-[15px] animate-spin">refresh</span><span>Logging out...</span>';
         localStorage.removeItem('empirial_session');
         try {
-          await fetch('/api/auth/logout', { method: 'POST' });
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
         } catch (_) {}
         window.location.href = '/login.html';
       });
 
-      // Switch Account
+      // Switch Account button
       document.getElementById('switch-account-btn')?.addEventListener('click', function() {
         this.innerHTML = '<span>Redirecting to Discord...</span>';
+        localStorage.removeItem('empirial_session');
         window.location.href = '/api/auth/discord/login?prompt=consent';
       });
     })();

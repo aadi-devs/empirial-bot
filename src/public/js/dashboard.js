@@ -36,6 +36,8 @@ async function logout() {
 // Toast System
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
+  if (!container) return;
+
   const toast = document.createElement('div');
   const icons = {
     info: 'info text-primary',
@@ -43,9 +45,9 @@ function showToast(message, type = 'info') {
     error: 'error text-error'
   };
 
-  toast.className = 'bg-surface-container border border-outline-variant px-4 py-3 rounded-lg text-xs flex items-center gap-2 shadow-xl animate-fade-in transition-all duration-300';
+  toast.className = 'bg-surface-container border border-outline-variant/40 px-3.5 py-2.5 rounded text-xs flex items-center gap-2 shadow-xl transition-all duration-300 font-sans';
   toast.innerHTML = `
-    <span class="material-symbols-outlined text-[18px] ${icons[type] || icons.info}">${type === 'success' ? 'check_circle' : (type === 'error' ? 'error' : 'info')}</span>
+    <span class="material-symbols-outlined text-[17px] ${icons[type] || icons.info}">${type === 'success' ? 'check_circle' : (type === 'error' ? 'error' : 'info')}</span>
     <span class="text-on-surface font-medium">${escapeHtml(message)}</span>
   `;
 
@@ -72,20 +74,21 @@ function switchView(viewName, filter = null) {
     'all-tickets': 'All tickets',
     'ticket-detail': currentActiveTicketId ? `Ticket ${currentActiveTicketId.toUpperCase()}` : 'Ticket Detail',
     'panels': 'Ticket Panels',
-    'settings': 'System Settings'
+    'settings': 'System Settings',
+    'access': 'Access Control & Audit'
   };
   if (breadcrumb) breadcrumb.textContent = titles[viewName] || 'Dashboard';
 
   // Highlight Sidebar Nav
-  document.querySelectorAll('.nav-item, .nav-sub-item').forEach(el => {
-    el.classList.remove('bg-surface-container-high', 'text-on-surface', 'font-semibold');
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.remove('bg-surface-container', 'text-on-surface', 'font-medium', 'border-l', 'border-primary-container', 'pl-3');
     el.classList.add('text-on-surface-variant');
   });
 
   const activeNav = document.querySelector(`[data-nav="${viewName}"]`);
   if (activeNav) {
     activeNav.classList.remove('text-on-surface-variant');
-    activeNav.classList.add('bg-surface-container-high', 'text-on-surface', 'font-semibold');
+    activeNav.classList.add('bg-surface-container', 'text-on-surface', 'font-medium', 'border-l', 'border-primary-container', 'pl-3');
   }
 
   if (viewName === 'all-tickets') {
@@ -101,33 +104,35 @@ function switchView(viewName, filter = null) {
 function initSocket() {
   if (typeof io === 'undefined') return;
 
-  socket = io();
+  try {
+    socket = io();
 
-  socket.on('ticket:created', (ticket) => {
-    showToast(`New ticket opened: ${ticket.id.toUpperCase()}`, 'info');
-    loadDashboardData();
-  });
+    socket.on('ticket:created', (ticket) => {
+      showToast(`New ticket opened: ${ticket.id.toUpperCase()}`, 'info');
+      loadDashboardData();
+    });
 
-  socket.on('ticket:updated', (ticket) => {
-    loadDashboardData();
-    if (currentActiveTicketId === ticket.id) {
-      inspectTicket(ticket.id);
-    }
-  });
+    socket.on('ticket:updated', (ticket) => {
+      loadDashboardData();
+      if (currentActiveTicketId === ticket.id) {
+        inspectTicket(ticket.id);
+      }
+    });
 
-  socket.on('ticket:closed', (ticket) => {
-    showToast(`Ticket ${ticket.id.toUpperCase()} closed`, 'info');
-    loadDashboardData();
-    if (currentActiveTicketId === ticket.id) {
-      inspectTicket(ticket.id);
-    }
-  });
+    socket.on('ticket:closed', (ticket) => {
+      showToast(`Ticket ${ticket.id.toUpperCase()} closed`, 'info');
+      loadDashboardData();
+      if (currentActiveTicketId === ticket.id) {
+        inspectTicket(ticket.id);
+      }
+    });
 
-  socket.on('ticket:message', ({ ticketId, message }) => {
-    if (currentActiveTicketId === ticketId) {
-      appendChatMessage(message);
-    }
-  });
+    socket.on('ticket:message', ({ ticketId, message }) => {
+      if (currentActiveTicketId === ticketId) {
+        appendChatMessage(message);
+      }
+    });
+  } catch (_) {}
 }
 
 // Load Dashboard Data (Stats, Tickets, Guilds, Config)
@@ -144,27 +149,36 @@ async function loadDashboardData() {
     const uptimeMins = Math.floor((uptimeSec % 3600) / 60);
 
     // Sidebar
-    document.getElementById('sidebar-ping').textContent = `${ping}ms`;
+    const sidebarPing = document.getElementById('sidebar-ping');
+    if (sidebarPing) sidebarPing.textContent = `${ping}ms`;
     const sidebarDot = document.getElementById('sidebar-status-dot');
-    sidebarDot.className = `w-2 h-2 rounded-full ${isOnline ? 'bg-secondary' : 'bg-error'} shrink-0`;
+    if (sidebarDot) sidebarDot.className = `w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-secondary' : 'bg-error'}`;
 
     // Header
     const topDot = document.getElementById('top-status-dot');
     const topText = document.getElementById('top-status-text');
-    topDot.className = `w-2 h-2 rounded-full ${isOnline ? 'bg-secondary' : 'bg-error'}`;
-    topText.textContent = isOnline ? 'Bot online' : 'Bot offline';
-    topText.className = `text-xs font-semibold ${isOnline ? 'text-secondary' : 'text-error'}`;
+    if (topDot) topDot.className = `w-2 h-2 rounded-full ${isOnline ? 'bg-secondary' : 'bg-error'}`;
+    if (topText) {
+      topText.textContent = isOnline ? 'Bot online' : 'Bot offline';
+      topText.className = isOnline ? 'text-secondary' : 'text-error';
+    }
 
     // Health Strip
-    document.getElementById('strip-bot-status').textContent = isOnline ? 'Bot online' : 'Offline';
-    document.getElementById('strip-ping').textContent = `${ping} ms (WS)`;
-    document.getElementById('strip-uptime').textContent = `99.98% (${uptimeHours}h ${uptimeMins}m)`;
-    document.getElementById('strip-guilds').textContent = `${statsData.bot.guilds} server${statsData.bot.guilds === 1 ? '' : 's'}`;
+    const stripBot = document.getElementById('strip-bot-status');
+    const stripPing = document.getElementById('strip-ping');
+    const stripUptime = document.getElementById('strip-uptime');
+    const stripGuilds = document.getElementById('strip-guilds');
+    if (stripBot) stripBot.textContent = isOnline ? 'BOT ONLINE' : 'OFFLINE';
+    if (stripPing) stripPing.textContent = `Socket Latency ${ping}ms`;
+    if (stripUptime) stripUptime.textContent = `Uptime 99.98% (${uptimeHours}h ${uptimeMins}m)`;
+    if (stripGuilds) stripGuilds.textContent = `${statsData.bot.guilds} server${statsData.bot.guilds === 1 ? '' : 's'}`;
 
     // Invite Links
     const inviteUrl = `https://discord.com/oauth2/authorize?client_id=${statsData.bot.clientId}&permissions=8&scope=bot%20applications.commands`;
-    document.getElementById('header-invite-btn').href = inviteUrl;
-    document.getElementById('sidebar-invite-link').href = inviteUrl;
+    const headerInvite = document.getElementById('header-invite-btn');
+    const sidebarInvite = document.getElementById('sidebar-invite-link');
+    if (headerInvite) headerInvite.href = inviteUrl;
+    if (sidebarInvite) sidebarInvite.href = inviteUrl;
 
     // 2. KPI Cards
     const total = statsData.tickets.total || 0;
@@ -173,24 +187,40 @@ async function loadDashboardData() {
     const closed = statsData.tickets.closed || 0;
     const unclaimed = Math.max(0, open);
 
-    document.getElementById('kpi-total').textContent = total;
-    document.getElementById('kpi-open').textContent = open + claimed;
-    document.getElementById('kpi-unclaimed').textContent = unclaimed;
+    const kpiTotal = document.getElementById('kpi-total');
+    const kpiOpen = document.getElementById('kpi-open');
+    const kpiUnclaimed = document.getElementById('kpi-unclaimed');
+    const kpiRate = document.getElementById('kpi-rate');
+    const kpiClosedSub = document.getElementById('kpi-closed-sub');
+    const kpiProgressBar = document.getElementById('kpi-progress-bar');
+
+    if (kpiTotal) kpiTotal.textContent = total;
+    if (kpiOpen) kpiOpen.textContent = open + claimed;
+    if (kpiUnclaimed) kpiUnclaimed.textContent = unclaimed;
 
     const rate = total > 0 ? Math.round((closed / total) * 100) : 100;
-    document.getElementById('kpi-rate').textContent = `${rate}%`;
-    document.getElementById('kpi-closed-sub').textContent = `${closed} resolved`;
-    document.getElementById('kpi-progress-bar').style.width = `${rate}%`;
+    if (kpiRate) kpiRate.textContent = `${rate}%`;
+    if (kpiClosedSub) kpiClosedSub.textContent = `${closed} resolved tickets`;
+    if (kpiProgressBar) kpiProgressBar.style.width = `${rate}%`;
 
     // Sidebar Badges
-    document.getElementById('sidebar-total-badge').textContent = total;
-    document.getElementById('sidebar-unclaimed-badge').textContent = unclaimed;
+    const sbTotalBadge = document.getElementById('sidebar-total-badge');
+    const sbUnclaimedBadge = document.getElementById('sidebar-unclaimed-badge');
+    if (sbTotalBadge) sbTotalBadge.textContent = total;
+    if (sbUnclaimedBadge) sbUnclaimedBadge.textContent = unclaimed;
 
-    // Quick status counts
-    document.getElementById('tab-count-open').textContent = open;
-    document.getElementById('tab-count-claimed').textContent = claimed;
-    document.getElementById('tab-count-closed').textContent = closed;
-    document.getElementById('tab-count-unclaimed').textContent = unclaimed;
+    // Tab Counts on All Tickets
+    const tabOpen = document.getElementById('tab-count-open');
+    const tabClaimed = document.getElementById('tab-count-claimed');
+    const tabUnclaimed = document.getElementById('tab-count-unclaimed');
+    const tabClosed = document.getElementById('tab-count-closed');
+    const tabHeader = document.getElementById('tab-count-total-header');
+
+    if (tabOpen) tabOpen.textContent = open;
+    if (tabClaimed) tabClaimed.textContent = claimed;
+    if (tabUnclaimed) tabUnclaimed.textContent = unclaimed;
+    if (tabClosed) tabClosed.textContent = closed;
+    if (tabHeader) tabHeader.textContent = `${total} total records in Supabase`;
 
     // 3. Fetch Tickets
     const ticketsRes = await authFetch('/api/tickets');
@@ -205,33 +235,33 @@ async function loadDashboardData() {
   }
 }
 
-// Render Overview Recent Tickets
+// Render Overview Recent Tickets Table
 function renderOverviewRecentTable() {
   const tbody = document.getElementById('overview-recent-tbody');
   if (!tbody) return;
 
   const recent = allTicketsCache.slice(0, 5);
   if (recent.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-outline">No tickets recorded yet. Run /ticket-panel in Discord or deploy a panel to start!</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-outline font-mono text-xs">No tickets recorded in Supabase Postgres yet. Deploy a ticket panel to begin!</td></tr>`;
     return;
   }
 
   tbody.innerHTML = recent.map(t => {
     const statusBadges = {
-      open: '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary-container/20 text-secondary border border-secondary/30 font-medium text-[11px]"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Open</span>',
-      claimed: '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-tertiary-container/30 text-tertiary border border-tertiary/30 font-medium text-[11px]"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Claimed</span>',
-      closed: '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high text-outline border border-outline-variant font-medium text-[11px]"><span class="w-1.5 h-1.5 rounded-full bg-outline"></span> Closed</span>'
+      open: '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-secondary-container/20 text-secondary border border-secondary/30 font-mono text-[10px] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Open</span>',
+      claimed: '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-tertiary-container/30 text-tertiary border border-tertiary/30 font-mono text-[10px] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Claimed</span>',
+      closed: '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-high text-outline border border-outline-variant font-mono text-[10px] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-outline"></span> Closed</span>'
     };
 
     return `
-      <tr class="hover:bg-surface-container-high/60 transition">
-        <td class="py-2.5 px-3 font-code-sm font-bold text-primary">${t.id.toUpperCase()}</td>
+      <tr class="hover:bg-surface-container/50 transition cursor-pointer" onclick="inspectTicket('${t.id}')">
+        <td class="py-2.5 px-3 font-mono font-medium text-outline">#${t.id.replace('ticket-', '').toUpperCase()}</td>
         <td class="py-2.5 px-3 font-medium text-on-surface">${escapeHtml(t.userTag)}</td>
-        <td class="py-2.5 px-3 text-on-surface-variant">${escapeHtml(t.category || 'General')}</td>
+        <td class="py-2.5 px-3 text-outline font-mono text-[11px]">${escapeHtml(t.category || 'General')}</td>
         <td class="py-2.5 px-3 text-on-surface truncate max-w-[240px]">${escapeHtml(t.subject || 'Support')}</td>
         <td class="py-2.5 px-3">${statusBadges[t.status] || t.status}</td>
         <td class="py-2.5 px-3 text-right">
-          <button onclick="inspectTicket('${t.id}')" class="px-2.5 py-1 rounded bg-surface-container-highest hover:bg-surface-bright text-on-surface font-semibold text-[11px] transition">
+          <button onclick="event.stopPropagation(); inspectTicket('${t.id}')" class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-mono text-[11px] transition border border-outline-variant/30">
             Inspect
           </button>
         </td>
@@ -245,9 +275,9 @@ function filterStatus(status) {
   activeStatusFilter = status;
   document.querySelectorAll('.status-chip').forEach(btn => {
     if (btn.getAttribute('data-status') === status) {
-      btn.className = 'status-chip active px-3 py-1.5 rounded-lg bg-surface-container-high text-xs font-semibold text-on-surface transition';
+      btn.className = 'status-chip active px-2.5 py-1 rounded bg-surface-container-high text-on-surface border border-outline-variant/30';
     } else {
-      btn.className = 'status-chip px-3 py-1.5 rounded-lg bg-surface-container-low text-xs font-semibold text-on-surface-variant hover:text-on-surface transition';
+      btn.className = 'status-chip px-2.5 py-1 rounded bg-surface-container-low text-outline hover:text-on-surface border border-outline-variant/20';
     }
   });
   renderAllTicketsTable();
@@ -277,41 +307,47 @@ function renderAllTicketsTable() {
   }
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-12 text-outline">No tickets matching current filters.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-16 text-outline font-mono text-xs">No tickets matching current filters.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.map(t => {
     const statusBadges = {
-      open: '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary-container/20 text-secondary border border-secondary/30 font-medium text-[11px]"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Open</span>',
-      claimed: '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-tertiary-container/30 text-tertiary border border-tertiary/30 font-medium text-[11px]"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Claimed</span>',
-      closed: '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high text-outline border border-outline-variant font-medium text-[11px]"><span class="w-1.5 h-1.5 rounded-full bg-outline"></span> Closed</span>'
+      open: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-secondary-container/20 text-secondary border border-secondary/30 font-mono text-[10px] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Open</span>',
+      claimed: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container/30 text-tertiary border border-tertiary/30 font-mono text-[10px] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Claimed</span>',
+      closed: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-outline border border-outline-variant font-mono text-[10px] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-outline"></span> Closed</span>'
     };
 
-    const claimedStr = t.claimedBy ? escapeHtml(t.claimedBy.tag || t.claimedBy.username) : '<span class="text-outline">Unclaimed</span>';
+    const claimedStr = t.claimedBy ? escapeHtml(t.claimedBy.tag || t.claimedBy.username) : '<span class="text-outline">Unassigned</span>';
     const dateStr = new Date(t.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     const avatar = t.userAvatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
 
     return `
-      <tr class="hover:bg-surface-container-high/60 transition">
-        <td class="py-3 px-4 font-code-sm font-bold text-primary">${t.id.toUpperCase()}</td>
+      <tr class="hover:bg-surface-container-low transition cursor-pointer" onclick="inspectTicket('${t.id}')">
+        <td class="py-3 px-4 font-mono font-medium text-outline">#${t.id.replace('ticket-', '').toUpperCase()}</td>
         <td class="py-3 px-4">
           <div class="flex items-center gap-2">
-            <img class="w-6 h-6 rounded-full bg-slate-700 object-cover" src="${avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
-            <span class="font-medium text-on-surface">${escapeHtml(t.userTag)}</span>
+            <img class="w-6 h-6 rounded-full bg-surface-container-high object-cover shrink-0" src="${avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+            <div class="flex flex-col min-w-0">
+              <span class="font-medium text-on-surface truncate">${escapeHtml(t.userTag)}</span>
+              <span class="font-mono text-[10px] text-outline truncate">${t.userId || ''}</span>
+            </div>
           </div>
         </td>
-        <td class="py-3 px-4 text-on-surface-variant">${escapeHtml(t.category || 'General')}</td>
-        <td class="py-3 px-4 text-on-surface truncate max-w-[220px]" title="${escapeHtml(t.subject)}">${escapeHtml(t.subject || 'Support')}</td>
-        <td class="py-3 px-4 text-on-surface-variant text-[11px]">${claimedStr}</td>
+        <td class="py-3 px-4 text-outline font-mono text-[11px]">${escapeHtml(t.category || 'General')}</td>
+        <td class="py-3 px-4 min-w-0 max-w-[280px]">
+          <div class="text-on-surface font-medium truncate">${escapeHtml(t.subject || 'Support')}</div>
+          <div class="text-outline text-[11px] truncate">${escapeHtml(t.description || 'Ticket created in Empirial')}</div>
+        </td>
+        <td class="py-3 px-4 text-on-surface text-[11px] font-mono">${claimedStr}</td>
         <td class="py-3 px-4">${statusBadges[t.status] || t.status}</td>
-        <td class="py-3 px-4 text-outline font-code-sm text-[11px]">${dateStr}</td>
+        <td class="py-3 px-4 text-outline font-mono text-[11px]">${dateStr}</td>
         <td class="py-3 px-4 text-right space-x-1.5">
-          <button onclick="inspectTicket('${t.id}')" class="px-2.5 py-1 rounded bg-primary-container hover:bg-primary text-on-primary-container font-semibold text-[11px] transition">
-            Open
+          <button onclick="event.stopPropagation(); inspectTicket('${t.id}')" class="px-2.5 py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-mono text-[11px] transition border border-outline-variant/30">
+            View
           </button>
           ${t.transcriptFile ? `
-            <a href="/raw-transcripts/${t.transcriptFile}" target="_blank" class="inline-block px-2 py-1 rounded bg-surface-container-highest hover:bg-surface-bright text-outline hover:text-on-surface text-[11px] font-semibold transition" title="View Transcript">
+            <a href="/raw-transcripts/${t.transcriptFile}" target="_blank" onclick="event.stopPropagation();" class="inline-block px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-outline hover:text-on-surface text-[10px] font-mono transition border border-outline-variant/30" title="View Transcript">
               HTML
             </a>
           ` : ''}
@@ -319,6 +355,19 @@ function renderAllTicketsTable() {
       </tr>
     `;
   }).join('');
+}
+
+// Export Tickets as JSON
+function exportTickets() {
+  if (!allTicketsCache || allTicketsCache.length === 0) {
+    return showToast('No ticket records available to export.', 'info');
+  }
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allTicketsCache, null, 2));
+  const dlAnchorElem = document.createElement('a');
+  dlAnchorElem.setAttribute("href", dataStr);
+  dlAnchorElem.setAttribute("download", `empirial_tickets_export_${Date.now()}.json`);
+  dlAnchorElem.click();
+  showToast('Exported tickets to JSON file', 'success');
 }
 
 // Inspect Ticket (Switches to Detail View)
@@ -331,27 +380,44 @@ async function inspectTicket(ticketId) {
     const ticket = await res.json();
 
     // Populate Headers
-    document.getElementById('detail-ticket-id').textContent = ticket.id.toUpperCase();
-    document.getElementById('detail-ticket-subject').textContent = ticket.subject || 'Support Request';
-    document.getElementById('detail-opened-by').textContent = `Opened by @${ticket.userTag}`;
-    document.getElementById('detail-channel-name').textContent = `#${ticket.channelId ? 'ticket-' + ticket.id.replace('ticket-', '') : 'channel'}`;
+    const detailId = document.getElementById('detail-ticket-id');
+    const detailSub = document.getElementById('detail-ticket-subject');
+    const detailBy = document.getElementById('detail-opened-by');
+    const detailCh = document.getElementById('detail-channel-name');
+
+    if (detailId) detailId.textContent = `#${ticket.id.replace('ticket-', '').toUpperCase()}`;
+    if (detailSub) detailSub.textContent = ticket.subject || 'Support Request';
+    if (detailBy) detailBy.textContent = `Opened by @${ticket.userTag}`;
+    if (detailCh) detailCh.textContent = `#${ticket.channelId ? 'ticket-' + ticket.id.replace('ticket-', '') : 'channel'}`;
 
     // Populate Rail Inspector
-    document.getElementById('rail-ticket-id').textContent = ticket.id.toUpperCase();
-    document.getElementById('rail-channel-id').textContent = ticket.channelId || '--';
-    document.getElementById('rail-status').textContent = ticket.status.toUpperCase();
-    document.getElementById('rail-status').className = ticket.status === 'open' ? 'text-secondary font-semibold' : (ticket.status === 'claimed' ? 'text-tertiary font-semibold' : 'text-outline font-semibold');
-    document.getElementById('rail-category').textContent = ticket.category || 'General';
-    document.getElementById('rail-created').textContent = new Date(ticket.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const railId = document.getElementById('rail-ticket-id');
+    const railCh = document.getElementById('rail-channel-id');
+    const railSt = document.getElementById('rail-status');
+    const railCat = document.getElementById('rail-category');
+    const railCr = document.getElementById('rail-created');
+
+    if (railId) railId.textContent = `#${ticket.id.replace('ticket-', '').toUpperCase()}`;
+    if (railCh) railCh.textContent = ticket.channelId || '--';
+    if (railSt) {
+      railSt.textContent = ticket.status.toUpperCase();
+      railSt.className = ticket.status === 'open' ? 'text-secondary font-semibold' : (ticket.status === 'claimed' ? 'text-tertiary font-semibold' : 'text-outline font-semibold');
+    }
+    if (railCat) railCat.textContent = ticket.category || 'General';
+    if (railCr) railCr.textContent = new Date(ticket.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     // Opened by user card
-    document.getElementById('rail-user-avatar').src = ticket.userAvatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
-    document.getElementById('rail-user-name').textContent = ticket.userTag || 'Discord User';
-    document.getElementById('rail-user-id').textContent = ticket.userId || 'Snowflake ID';
+    const railAv = document.getElementById('rail-user-avatar');
+    const railName = document.getElementById('rail-user-name');
+    const railUid = document.getElementById('rail-user-id');
+    if (railAv) railAv.src = ticket.userAvatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
+    if (railName) railName.textContent = `@${ticket.userTag || 'Discord User'}`;
+    if (railUid) railUid.textContent = ticket.userId || 'Snowflake ID';
 
     // Staff Assigned card
+    const railStaff = document.getElementById('rail-staff-name');
     const staffText = ticket.claimedBy ? (ticket.claimedBy.tag || ticket.claimedBy.username) : 'Unassigned';
-    document.getElementById('rail-staff-name').textContent = staffText;
+    if (railStaff) railStaff.textContent = staffText;
 
     // Actions
     const closeBtn = document.getElementById('detail-close-btn');
@@ -359,29 +425,30 @@ async function inspectTicket(ticketId) {
     const transcriptBtn = document.getElementById('detail-transcript-btn');
 
     if (ticket.status === 'closed') {
-      closeBtn.classList.add('hidden');
-      claimBtn.classList.add('hidden');
+      if (closeBtn) closeBtn.classList.add('hidden');
+      if (claimBtn) claimBtn.classList.add('hidden');
     } else {
-      closeBtn.classList.remove('hidden');
-      claimBtn.classList.remove('hidden');
+      if (closeBtn) closeBtn.classList.remove('hidden');
+      if (claimBtn) claimBtn.classList.remove('hidden');
     }
 
-    if (ticket.transcriptFile) {
+    if (ticket.transcriptFile && transcriptBtn) {
       transcriptBtn.href = `/raw-transcripts/${ticket.transcriptFile}`;
       transcriptBtn.classList.remove('hidden');
-    } else {
+    } else if (transcriptBtn) {
       transcriptBtn.href = '#';
       transcriptBtn.classList.add('hidden');
     }
 
     // Render Chat Messages
     const container = document.getElementById('detail-messages-container');
+    if (!container) return;
     container.innerHTML = '';
 
     if (!ticket.messages || ticket.messages.length === 0) {
       container.innerHTML = `
-        <div class="text-center py-16 text-[#80848e] space-y-2 select-none">
-          <span class="material-symbols-outlined text-4xl text-[#3f4147]">chat_bubble_outline</span>
+        <div class="text-center py-16 text-outline space-y-2 select-none font-mono">
+          <span class="material-symbols-outlined text-4xl text-outline-variant">chat_bubble_outline</span>
           <p class="text-xs">No chat messages recorded yet in this ticket.</p>
         </div>
       `;
@@ -404,16 +471,16 @@ function appendChatMessage(msg) {
   const time = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const msgDiv = document.createElement('div');
-  msgDiv.className = 'group flex gap-4 px-2 py-1.5 -mx-2 hover:bg-[#2e3035] rounded transition-colors';
+  msgDiv.className = 'group flex gap-3 px-3 py-2 rounded hover:bg-surface-container transition-colors';
   msgDiv.innerHTML = `
-    <img class="w-10 h-10 rounded-full object-cover shrink-0 select-none shadow-sm" src="${avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+    <img class="w-8 h-8 rounded-full object-cover shrink-0 select-none shadow-sm mt-0.5" src="${avatar}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
     <div class="flex-1 min-w-0">
-      <div class="flex items-center gap-2 mb-0.5">
-        <span class="font-headline-md text-[14px] font-semibold text-white">${authorName}</span>
-        ${isStaff ? '<span class="bg-secondary-container/80 text-white text-[10px] font-bold px-1.5 py-0.2 rounded uppercase tracking-wider">STAFF</span>' : ''}
-        <span class="text-xs text-[#949ba4]">${time}</span>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="font-medium text-xs text-on-surface">${authorName}</span>
+        ${isStaff ? '<span class="bg-primary-container text-white text-[9px] font-mono px-1.5 py-0.2 rounded font-semibold tracking-wider">STAFF</span>' : ''}
+        <span class="text-[11px] font-mono text-outline">${time}</span>
       </div>
-      <p class="text-[#dbdee1] leading-relaxed break-words">
+      <p class="text-xs text-on-surface-variant leading-relaxed break-words font-sans">
         ${escapeHtml(msg.content)}
       </p>
     </div>
@@ -426,6 +493,7 @@ function appendChatMessage(msg) {
 // Send Staff Reply to Discord
 async function sendStaffMessage() {
   const input = document.getElementById('detail-reply-input');
+  if (!input) return;
   const text = input.value.trim();
   if (!text || !currentActiveTicketId) return;
 
@@ -447,7 +515,6 @@ async function sendStaffMessage() {
 // Claim Ticket
 async function claimActiveTicket() {
   if (!currentActiveTicketId) return;
-
   try {
     const res = await authFetch(`/api/tickets/${currentActiveTicketId}/claim`, {
       method: 'POST',
@@ -466,7 +533,7 @@ async function claimActiveTicket() {
 // Close Ticket
 async function closeActiveTicket() {
   if (!currentActiveTicketId) return;
-  if (!confirm(`Are you sure you want to close ${currentActiveTicketId.toUpperCase()}? An HTML transcript will be archived.`)) return;
+  if (!confirm(`Are you sure you want to close ${currentActiveTicketId.toUpperCase()}? An HTML transcript will be archived in Supabase.`)) return;
 
   try {
     const res = await authFetch(`/api/tickets/${currentActiveTicketId}/close`, {
@@ -555,19 +622,19 @@ async function loadConfig() {
     const res = await authFetch('/api/config');
     const config = await res.json();
 
-    if (config.ticketCategoryId) document.getElementById('config-category').value = config.ticketCategoryId;
-    if (config.supportRoleId) document.getElementById('config-role').value = config.supportRoleId;
-    if (config.logsChannelId) document.getElementById('config-logs').value = config.logsChannelId;
-    if (config.maxOpenTicketsPerUser) document.getElementById('config-limit').value = config.maxOpenTicketsPerUser;
+    if (config.ticketCategoryId && document.getElementById('config-category')) document.getElementById('config-category').value = config.ticketCategoryId;
+    if (config.supportRoleId && document.getElementById('config-role')) document.getElementById('config-role').value = config.supportRoleId;
+    if (config.logsChannelId && document.getElementById('config-logs')) document.getElementById('config-logs').value = config.logsChannelId;
+    if (config.maxOpenTicketsPerUser && document.getElementById('config-limit')) document.getElementById('config-limit').value = config.maxOpenTicketsPerUser;
 
     const panel = config.panelConfig || {};
-    if (panel.title) document.getElementById('panel-title-input').value = panel.title;
-    if (panel.description) document.getElementById('panel-desc-input').value = panel.description;
+    if (panel.title && document.getElementById('panel-title-input')) document.getElementById('panel-title-input').value = panel.title;
+    if (panel.description && document.getElementById('panel-desc-input')) document.getElementById('panel-desc-input').value = panel.description;
     if (panel.color) {
-      document.getElementById('panel-color-picker').value = panel.color;
-      document.getElementById('panel-color-text').value = panel.color;
+      if (document.getElementById('panel-color-picker')) document.getElementById('panel-color-picker').value = panel.color;
+      if (document.getElementById('panel-color-text')) document.getElementById('panel-color-text').value = panel.color;
     }
-    if (panel.buttonText) document.getElementById('panel-btn-text').value = panel.buttonText;
+    if (panel.buttonText && document.getElementById('panel-btn-text')) document.getElementById('panel-btn-text').value = panel.buttonText;
 
     updatePanelPreview();
   } catch (err) {
@@ -579,13 +646,18 @@ async function loadConfig() {
 function updatePanelPreview() {
   const title = document.getElementById('panel-title-input')?.value || '👑 Empirial Support Tickets';
   const desc = document.getElementById('panel-desc-input')?.value || 'Select a category to open a ticket.';
-  const color = document.getElementById('panel-color-text')?.value || '#7c3aed';
+  const color = document.getElementById('panel-color-text')?.value || '#5865f2';
   const btn = document.getElementById('panel-btn-text')?.value || 'Open Ticket';
 
-  document.getElementById('preview-panel-title').textContent = title;
-  document.getElementById('preview-panel-desc').textContent = desc;
-  document.getElementById('preview-panel-btn').textContent = btn;
-  document.getElementById('preview-panel-card').style.borderLeftColor = color;
+  const previewTitle = document.getElementById('preview-panel-title');
+  const previewDesc = document.getElementById('preview-panel-desc');
+  const previewBtn = document.getElementById('preview-panel-btn');
+  const previewCard = document.getElementById('preview-panel-card');
+
+  if (previewTitle) previewTitle.textContent = title;
+  if (previewDesc) previewDesc.textContent = desc;
+  if (previewBtn) previewBtn.innerHTML = `<span>✉️</span><span>${escapeHtml(btn)}</span>`;
+  if (previewCard) previewCard.style.borderLeftColor = color;
 }
 
 // Deploy Panel to Discord
@@ -659,7 +731,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Global search (Ctrl+K or input)
   document.getElementById('global-search-input')?.addEventListener('input', (e) => {
     switchView('all-tickets');
-    document.getElementById('all-tickets-search').value = e.target.value;
+    const targetSearch = document.getElementById('all-tickets-search');
+    if (targetSearch) targetSearch.value = e.target.value;
     renderAllTicketsTable();
   });
 
@@ -715,7 +788,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      showToast('Configuration saved successfully!', 'success');
+      showToast('Configuration saved to Supabase!', 'success');
     } catch (err) {
       showToast(`Failed to save config: ${err.message}`, 'error');
     }
