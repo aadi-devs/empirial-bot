@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const fs = require('fs');
 const { router: authRouter, authMiddleware } = require('./routes/auth');
 const createApiRouter = require('./routes/api');
 
