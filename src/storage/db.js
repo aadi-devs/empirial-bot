@@ -1,17 +1,35 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+const BUNDLED_DATA_DIR = path.join(__dirname, '..', '..', 'data');
+const DATA_DIR = process.env.VERCEL
+  ? path.join('/tmp', 'empirial_data')
+  : BUNDLED_DATA_DIR;
+
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const TICKETS_FILE = path.join(DATA_DIR, 'tickets.json');
 const TRANSCRIPTS_DIR = path.join(DATA_DIR, 'transcripts');
 
-// Ensure directories exist
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-if (!fs.existsSync(TRANSCRIPTS_DIR)) {
-  fs.mkdirSync(TRANSCRIPTS_DIR, { recursive: true });
+// Ensure directories exist safely in all environments (including Vercel read-only root)
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(TRANSCRIPTS_DIR)) {
+    fs.mkdirSync(TRANSCRIPTS_DIR, { recursive: true });
+  }
+  if (process.env.VERCEL) {
+    const bundledConfig = path.join(BUNDLED_DATA_DIR, 'config.json');
+    if (fs.existsSync(bundledConfig) && !fs.existsSync(CONFIG_FILE)) {
+      try { fs.copyFileSync(bundledConfig, CONFIG_FILE); } catch (_) {}
+    }
+    const bundledTickets = path.join(BUNDLED_DATA_DIR, 'tickets.json');
+    if (fs.existsSync(bundledTickets) && !fs.existsSync(TICKETS_FILE)) {
+      try { fs.copyFileSync(bundledTickets, TICKETS_FILE); } catch (_) {}
+    }
+  }
+} catch (e) {
+  console.warn('[DB] Directory initialization warning:', e.message);
 }
 
 // Default Configuration
