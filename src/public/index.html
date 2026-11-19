@@ -129,6 +129,21 @@
           </a>
         </div>
 
+        <!-- Messaging & Design Section Header -->
+        <div class="mt-4 px-3 pb-1">
+          <span class="font-mono text-[10px] uppercase tracking-wider text-outline/80">Messaging &amp; Design</span>
+        </div>
+
+        <div class="flex flex-col gap-0.5">
+          <a href="#" onclick="switchView('builder'); return false;" class="nav-item flex items-center justify-between px-3 py-1.5 rounded-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-xs" data-path="embed-builder" data-nav="builder">
+            <span class="flex items-center">
+              <span class="material-symbols-outlined text-[16px] mr-2.5 text-primary">view_quilt</span>
+              <span>Embed Builder</span>
+            </span>
+            <span class="font-mono text-[9px] px-1.5 py-0.2 rounded bg-primary-container/20 text-primary border border-primary/30">v2</span>
+          </a>
+        </div>
+
         <!-- System Section Header -->
         <div class="mt-4 px-3 pb-1">
           <span class="font-mono text-[10px] uppercase tracking-wider text-outline/80">System</span>
@@ -907,6 +922,281 @@ Select a category below to open a private ticket. Our staff team will assist you
           </div>
         </div>
       </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 7: DISCOHOOK V2 CUSTOM EMBED BUILDER                -->
+      <!-- ======================================================== -->
+      <div id="view-builder" class="view-panel hidden flex flex-col w-full h-[calc(100vh-48px)] overflow-hidden bg-[#121316]">
+        
+        <!-- Top Builder Subheader / Action Bar -->
+        <div class="h-12 px-6 flex items-center justify-between border-b border-outline-variant/30 bg-surface-container-low shrink-0 z-20">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-primary text-[20px]">layers</span>
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-sm text-on-surface">Embed Builder</span>
+              <span class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-primary-container/20 text-primary border border-primary/30 uppercase font-bold">Components v2</span>
+            </div>
+            <span class="text-outline text-xs hidden md:inline">• Discohook-compatible Discord message designer</span>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <!-- Channel Destination Selector -->
+            <div class="flex items-center gap-1.5 bg-surface-container px-2.5 py-1 rounded border border-outline-variant/30">
+              <span class="material-symbols-outlined text-[15px] text-outline">tag</span>
+              <select id="builder-channel-select" class="bg-transparent text-xs text-on-surface outline-none cursor-pointer max-w-[180px]">
+                <option value="" disabled selected>Loading channels...</option>
+              </select>
+            </div>
+
+            <!-- JSON Tools Button -->
+            <button onclick="openJsonModal()" class="h-8 px-2.5 flex items-center gap-1 rounded bg-surface-container hover:bg-surface-container-high text-xs text-outline hover:text-on-surface transition-colors font-mono">
+              <span class="material-symbols-outlined text-[15px]">code</span>
+              <span>JSON</span>
+            </button>
+
+            <!-- Reset Template -->
+            <button onclick="resetBuilderSample()" class="h-8 px-2.5 flex items-center gap-1 rounded bg-surface-container hover:bg-surface-container-high text-xs text-outline hover:text-on-surface transition-colors font-mono" title="Reset to Discohook v2 default sample">
+              <span class="material-symbols-outlined text-[15px]">restart_alt</span>
+              <span>Sample</span>
+            </button>
+
+            <!-- Send to Discord Button -->
+            <button id="builder-send-btn" onclick="sendBuilderMessage()" class="h-8 px-3.5 flex items-center gap-1.5 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-medium shadow-sm transition-all">
+              <span class="material-symbols-outlined text-[16px]">send</span>
+              <span>Send Message</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Split Workspace (50% Editor / 50% Discord Preview) -->
+        <div class="flex flex-1 min-h-0 overflow-hidden divide-x divide-outline-variant/20">
+
+          <!-- ================= LEFT: DISCOHOOK V2 TREE EDITOR ================= -->
+          <div class="w-1/2 flex flex-col h-full bg-[#1e1f22] overflow-y-auto p-4 space-y-3 custom-scrollbar text-[#dbdee1] font-sans">
+            
+            <!-- Root Message Accordion -->
+            <div class="bg-[#2b2d31] rounded-md p-3 border border-[#383a40] space-y-2.5">
+              <!-- Message Title Row -->
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 cursor-pointer select-none" onclick="toggleMessageSettings()">
+                  <span id="msg-settings-chevron" class="material-symbols-outlined text-[18px] text-[#949ba4] transition-transform">expand_more</span>
+                  <span id="builder-message-title-preview" class="font-medium text-xs text-white truncate max-w-[320px]">Message 1 - Hey, welcome to Discohook!</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button onclick="promptRenameMessageTitle()" class="p-1 text-[#949ba4] hover:text-white rounded hover:bg-[#35373c]" title="Rename Message">
+                    <span class="material-symbols-outlined text-[16px]">edit</span>
+                  </button>
+                  <button onclick="duplicateEntireMessage()" class="p-1 text-[#949ba4] hover:text-white rounded hover:bg-[#35373c]" title="Duplicate Message">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                  <button onclick="clearEntireMessage()" class="p-1 text-[#949ba4] hover:text-rose-400 rounded hover:bg-[#35373c]" title="Clear Message">
+                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Message Subsections (Thread, Profile, Attachments) -->
+              <div id="msg-settings-body" class="space-y-2 pt-1 border-t border-[#383a40]/60">
+                <!-- Profile Accordion -->
+                <div class="bg-[#232428] rounded p-2.5 border border-[#313338]">
+                  <div class="flex items-center justify-between cursor-pointer select-none text-xs text-[#b5bac1] font-medium" onclick="toggleSubSection('profile')">
+                    <div class="flex items-center gap-1.5">
+                      <span id="chevron-profile" class="material-symbols-outlined text-[16px] text-[#949ba4]">chevron_right</span>
+                      <span>Profile</span>
+                    </div>
+                    <span class="font-mono text-[10px] text-[#949ba4]">Webhook / Bot Identity</span>
+                  </div>
+                  <div id="section-profile" class="hidden mt-2 pt-2 border-t border-[#313338] space-y-2">
+                    <div>
+                      <label class="block text-[11px] font-medium text-[#949ba4] mb-1">Username Override</label>
+                      <input id="builder-profile-username" type="text" placeholder="e.g. Empirial or Custom Name" class="w-full bg-[#1e1f22] border border-[#383a40] rounded px-2.5 py-1.5 text-xs text-white placeholder-[#80848e] focus:border-[#5865f2] outline-none" oninput="updateProfileSettings()">
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-medium text-[#949ba4] mb-1">Avatar URL Override</label>
+                      <input id="builder-profile-avatar" type="url" placeholder="https://cdn.discordapp.com/..." class="w-full bg-[#1e1f22] border border-[#383a40] rounded px-2.5 py-1.5 text-xs text-white placeholder-[#80848e] focus:border-[#5865f2] outline-none" oninput="updateProfileSettings()">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Thread Accordion -->
+                <div class="bg-[#232428] rounded p-2.5 border border-[#313338]">
+                  <div class="flex items-center justify-between cursor-pointer select-none text-xs text-[#b5bac1] font-medium" onclick="toggleSubSection('thread')">
+                    <div class="flex items-center gap-1.5">
+                      <span id="chevron-thread" class="material-symbols-outlined text-[16px] text-[#949ba4]">chevron_right</span>
+                      <span>Thread</span>
+                    </div>
+                    <span class="font-mono text-[10px] text-[#949ba4]">Optional</span>
+                  </div>
+                  <div id="section-thread" class="hidden mt-2 pt-2 border-t border-[#313338]">
+                    <label class="block text-[11px] font-medium text-[#949ba4] mb-1">Thread Name</label>
+                    <input id="builder-thread-name" type="text" placeholder="Create message in new thread..." class="w-full bg-[#1e1f22] border border-[#383a40] rounded px-2.5 py-1.5 text-xs text-white placeholder-[#80848e] focus:border-[#5865f2] outline-none">
+                  </div>
+                </div>
+
+                <!-- Attachments Accordion -->
+                <div class="bg-[#232428] rounded p-2.5 border border-[#313338]">
+                  <div class="flex items-center justify-between cursor-pointer select-none text-xs text-[#b5bac1] font-medium" onclick="toggleSubSection('attachments')">
+                    <div class="flex items-center gap-1.5">
+                      <span id="chevron-attachments" class="material-symbols-outlined text-[16px] text-[#949ba4]">chevron_right</span>
+                      <span>Attachments (0/10)</span>
+                    </div>
+                    <span class="font-mono text-[10px] text-[#949ba4]">URLs</span>
+                  </div>
+                  <div id="section-attachments" class="hidden mt-2 pt-2 border-t border-[#313338]">
+                    <label class="block text-[11px] font-medium text-[#949ba4] mb-1">Attachment File URL</label>
+                    <input id="builder-attachment-url" type="url" placeholder="https://..." class="w-full bg-[#1e1f22] border border-[#383a40] rounded px-2.5 py-1.5 text-xs text-white placeholder-[#80848e] focus:border-[#5865f2] outline-none">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Total Character Count Counter (italics, exactly as in screenshot) -->
+              <div class="pt-1 text-right">
+                <span class="italic text-[11px] text-[#949ba4]">Characters: <span id="builder-total-chars" class="font-mono text-[#dbdee1]">0</span>/4000</span>
+              </div>
+            </div>
+
+            <!-- Dynamic Items Tree (Content blocks, Containers, Action Rows) -->
+            <div id="builder-tree" class="space-y-3">
+              <!-- Dynamically populated by renderBuilderTree() -->
+            </div>
+
+            <!-- Bottom Add Toolbar -->
+            <div class="pt-2 flex items-center justify-between relative">
+              <div class="flex items-center gap-2">
+                <!-- Add Dropdown Button -->
+                <div class="relative">
+                  <button id="btn-add-main" onclick="toggleAddMenu()" class="h-8 px-3.5 flex items-center gap-1.5 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-medium transition-colors shadow-sm">
+                    <span>Add</span>
+                    <span class="material-symbols-outlined text-[16px]">expand_more</span>
+                  </button>
+                  <!-- Add Menu Popover -->
+                  <div id="add-menu-popover" class="hidden absolute left-0 bottom-10 w-44 bg-[#111214] border border-[#2b2d31] rounded-md shadow-2xl z-30 py-1 font-sans text-xs">
+                    <button onclick="addBuilderItem('content'); toggleAddMenu();" class="w-full flex items-center gap-2.5 px-3 py-2 text-[#dbdee1] hover:bg-[#232428] hover:text-white transition-colors text-left">
+                      <span class="font-bold text-sm text-[#949ba4]">T</span>
+                      <span>Content</span>
+                    </button>
+                    <button onclick="addBuilderItem('container'); toggleAddMenu();" class="w-full flex items-center gap-2.5 px-3 py-2 text-[#dbdee1] hover:bg-[#232428] hover:text-white transition-colors text-left">
+                      <span class="material-symbols-outlined text-[16px] text-[#949ba4]">add_box</span>
+                      <span>Container</span>
+                    </button>
+                    <button onclick="addBuilderItem('row'); toggleAddMenu();" class="w-full flex items-center gap-2.5 px-3 py-2 text-[#dbdee1] hover:bg-[#232428] hover:text-white transition-colors text-left">
+                      <span class="material-symbols-outlined text-[16px] text-[#949ba4]">horizontal_split</span>
+                      <span>Row</span>
+                    </button>
+                    <button onclick="addBuilderItem('separator'); toggleAddMenu();" class="w-full flex items-center gap-2.5 px-3 py-2 text-[#dbdee1] hover:bg-[#232428] hover:text-white transition-colors text-left">
+                      <span class="material-symbols-outlined text-[16px] text-[#949ba4]">horizontal_rule</span>
+                      <span>Separator</span>
+                    </button>
+                  </div>
+                </div>
+
+                <button onclick="clearEntireMessage()" class="h-8 px-3 rounded bg-[#2b2d31] hover:bg-[#35373c] text-xs text-[#b5bac1] hover:text-white transition-colors">
+                  Clear
+                </button>
+              </div>
+
+              <div class="text-[11px] text-[#949ba4] font-mono">
+                Discohook v2 Engine
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ================= RIGHT: DISCORD LIVE PREVIEW ================= -->
+          <div class="w-1/2 flex flex-col h-full bg-[#313338] overflow-y-auto p-6 custom-scrollbar text-[#dbdee1] font-sans selection:bg-[#5865f2]/40">
+            
+            <!-- Discord Channel Preview Header -->
+            <div class="flex items-center justify-between pb-3 mb-4 border-b border-[#3f4147]/40 text-[#949ba4] text-xs select-none">
+              <div class="flex items-center gap-1.5 font-medium">
+                <span class="text-[16px]">#</span>
+                <span id="preview-header-channel">general</span>
+                <span class="text-[10px] text-[#80848e] ml-2">Discord Client Live Preview</span>
+              </div>
+              <span class="font-mono text-[10px] text-[#23a55a] flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#23a55a] animate-pulse"></span>
+                <span>Active</span>
+              </span>
+            </div>
+
+            <!-- Discord Chat Message -->
+            <div class="flex gap-4 py-1 group">
+              <!-- Avatar -->
+              <div class="shrink-0 pt-0.5">
+                <img id="preview-bot-avatar" src="https://cdn.discordapp.com/embed/avatars/4.png" alt="Bot Avatar" class="w-10 h-10 rounded-full object-cover select-none">
+              </div>
+
+              <!-- Message Body -->
+              <div class="flex-1 min-w-0 space-y-2">
+                <!-- User tag and timestamp -->
+                <div class="flex items-baseline gap-1.5 leading-none">
+                  <span id="preview-bot-name" class="font-medium text-white hover:underline cursor-pointer text-[15px]">Empirial</span>
+                  <span class="bg-[#5865f2] text-white text-[9px] font-bold px-1.5 py-0.5 rounded leading-none tracking-wide select-none">APP</span>
+                  <span id="preview-bot-time" class="text-[11px] text-[#949ba4] ml-1 select-none">Today at 20:46</span>
+                </div>
+
+                <!-- Top Message Content -->
+                <div id="preview-top-content" class="text-[14px] leading-relaxed text-[#dbdee1] whitespace-pre-line break-words space-y-2">
+                  <!-- Parsed Discord Markdown -->
+                </div>
+
+                <!-- Containers (v2 Embeds) -->
+                <div id="preview-containers-list" class="space-y-2 max-w-[520px]">
+                  <!-- Rendered Containers with colored left border -->
+                </div>
+
+                <!-- Action Rows (Buttons) -->
+                <div id="preview-rows-list" class="space-y-1.5 pt-1 max-w-[520px]">
+                  <!-- Rendered Action Rows with Discord Buttons -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- DISCOHOOK JSON IMPORT/EXPORT MODAL -->
+  <div id="json-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#1e1f22] border border-[#383a40] rounded-lg w-full max-w-xl shadow-2xl flex flex-col max-h-[85vh]">
+      <div class="h-12 px-4 border-b border-[#383a40] flex items-center justify-between">
+        <div class="flex items-center gap-2 text-white font-medium text-sm">
+          <span class="material-symbols-outlined text-[18px] text-[#5865f2]">data_object</span>
+          <span>Discohook JSON Payload</span>
+        </div>
+        <button onclick="closeJsonModal()" class="text-[#949ba4] hover:text-white">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <div class="p-4 flex-1 flex flex-col space-y-3 min-h-0">
+        <p class="text-xs text-[#949ba4]">
+          Import or copy standard Discohook v2 format JSON. Compatible with discohook.org and Discord message payloads.
+        </p>
+        <textarea id="json-modal-textarea" class="w-full flex-1 bg-[#111214] border border-[#383a40] rounded p-3 font-mono text-xs text-[#dbdee1] focus:border-[#5865f2] outline-none resize-none h-72 custom-scrollbar"></textarea>
+      </div>
+
+      <div class="h-14 px-4 border-t border-[#383a40] flex items-center justify-between bg-[#2b2d31]/50">
+        <button onclick="copyJsonToClipboard()" class="h-8 px-3 rounded bg-[#35373c] hover:bg-[#404249] text-xs text-white transition-colors flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[15px]">content_copy</span>
+          <span>Copy to Clipboard</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button onclick="closeJsonModal()" class="h-8 px-3 rounded bg-transparent hover:bg-[#35373c] text-xs text-[#b5bac1] transition-colors">
+            Cancel
+          </button>
+          <button onclick="applyImportedJson()" class="h-8 px-3.5 rounded bg-[#5865f2] hover:bg-[#4752c4] text-xs text-white font-medium transition-colors flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[15px]">file_download</span>
+            <span>Apply JSON</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
     </main>
   </div>
