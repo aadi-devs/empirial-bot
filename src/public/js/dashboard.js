@@ -830,6 +830,7 @@ const defaultDiscohookState = {
       id: "container_1",
       type: "container",
       collapsed: false,
+      baseColor: "#37373d",
       sidebarColor: "#37373d",
       spoiler: false,
       texts: [
@@ -851,6 +852,7 @@ const defaultDiscohookState = {
       id: "container_2",
       type: "container",
       collapsed: false,
+      baseColor: "#37373d",
       sidebarColor: "#37373d",
       spoiler: false,
       texts: [
@@ -975,7 +977,7 @@ function setupBuilderClickOutside() {
     // Close Custom Color Picker if clicking outside
     const picker = document.getElementById('discohook-color-picker-popover');
     if (picker && !picker.classList.contains('hidden')) {
-      if (!picker.contains(e.target) && !e.target.closest('[id^="color-swatch-box-"]')) {
+      if (!picker.contains(e.target) && !e.target.closest('[id^="color-swatch-box-"]') && !e.target.closest('[id^="base-color-swatch-box-"]')) {
         picker.classList.add('hidden');
       }
     }
@@ -1156,7 +1158,9 @@ function createContentTreeItem(item, index) {
 function createContainerTreeItem(item, index) {
   const div = document.createElement('div');
   const sidebarColor = item.sidebarColor || '#37373d';
-  div.className = 'bg-[#2b2d31] rounded-md p-3 border border-[#383a40] space-y-3 font-sans transition-all';
+  const baseColor = item.baseColor || '#37373d';
+  div.className = 'rounded-md p-3 border border-[#383a40] space-y-3 font-sans transition-all';
+  div.style.backgroundColor = baseColor;
   div.style.borderLeft = `4px solid ${sidebarColor}`;
   div.id = `item-${item.id}`;
 
@@ -1214,12 +1218,22 @@ function createContainerTreeItem(item, index) {
         <span class="text-xs text-[#dbdee1]">Mark as spoiler</span>
       </label>
 
-      <!-- Sidebar Colour Input & Swatch (Exact screenshot match) -->
-      <div>
-        <label class="block text-[11px] font-medium text-[#dbdee1] mb-1">Sidebar Colour</label>
-        <div class="flex items-center gap-2">
-          <input type="text" id="color-hex-input-${item.id}" value="${sidebarColor}" class="flex-1 bg-[#1e1f22] border border-[#383a40] rounded px-3 py-1.5 text-xs text-white font-mono focus:border-[#5865f2] outline-none uppercase font-semibold" oninput="updateContainerColor('${item.id}', this.value)">
-          <div id="color-swatch-box-${item.id}" onclick="openCustomColorPicker('${item.id}', event)" class="w-7 h-7 rounded overflow-hidden shrink-0 border border-[#383a40] cursor-pointer shadow-sm hover:scale-105 transition-transform" style="background-color: ${sidebarColor};" title="Click to open Discohook Color Picker"></div>
+      <!-- Sidebar & Base Colour Inputs & Swatches (55 55 61 / #37373D default) -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[11px] font-medium text-[#dbdee1] mb-1">Sidebar Colour</label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="color-hex-input-${item.id}" value="${sidebarColor}" class="flex-1 bg-[#1e1f22] border border-[#383a40] rounded px-2.5 py-1.5 text-xs text-white font-mono focus:border-[#5865f2] outline-none uppercase font-semibold" oninput="updateContainerColor('${item.id}', this.value)">
+            <div id="color-swatch-box-${item.id}" onclick="openCustomColorPicker('${item.id}', 'sidebarColor', event)" class="w-7 h-7 rounded overflow-hidden shrink-0 border border-[#383a40] cursor-pointer shadow-sm hover:scale-105 transition-transform" style="background-color: ${sidebarColor};" title="Click to open Discohook Color Picker"></div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-medium text-[#dbdee1] mb-1">Base Colour</label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="base-color-hex-input-${item.id}" value="${baseColor}" class="flex-1 bg-[#1e1f22] border border-[#383a40] rounded px-2.5 py-1.5 text-xs text-white font-mono focus:border-[#5865f2] outline-none uppercase font-semibold" oninput="updateContainerBaseColor('${item.id}', this.value)">
+            <div id="base-color-swatch-box-${item.id}" onclick="openCustomColorPicker('${item.id}', 'baseColor', event)" class="w-7 h-7 rounded overflow-hidden shrink-0 border border-[#383a40] cursor-pointer shadow-sm hover:scale-105 transition-transform" style="background-color: ${baseColor};" title="Click to open Discohook Color Picker"></div>
+          </div>
         </div>
       </div>
 
@@ -1477,8 +1491,10 @@ function renderBuilderPreview() {
   builderState.items.forEach(item => {
     if (item.type === 'container') {
       const card = document.createElement('div');
-      const sidebarColor = item.sidebarColor || '#58b9ff';
-      card.className = 'bg-[#2b2d31] rounded-[4px] p-3 text-[14px] leading-relaxed relative overflow-hidden transition-all space-y-2';
+      const sidebarColor = item.sidebarColor || '#37373d';
+      const baseColor = item.baseColor || '#37373d';
+      card.className = 'rounded-[4px] p-3 text-[14px] leading-relaxed relative overflow-hidden transition-all space-y-2';
+      card.style.backgroundColor = baseColor;
       card.style.borderLeft = `4px solid ${sidebarColor}`;
 
       // Thumbnail float
@@ -1830,12 +1846,36 @@ function updateContainerColor(containerId, color) {
   }
 }
 
+function updateContainerBaseColor(containerId, color) {
+  const container = builderState.items.find(i => i.id === containerId);
+  if (container) {
+    if (!color.startsWith('#') && /^[0-9A-Fa-f]{3,6}$/.test(color)) {
+      color = `#${color}`;
+    }
+    container.baseColor = color;
+    
+    // Update container background in tree
+    const cardEl = document.getElementById(`item-${containerId}`);
+    if (cardEl) cardEl.style.backgroundColor = color;
+
+    // Update container base color swatch box
+    const swatchEl = document.getElementById(`base-color-swatch-box-${containerId}`);
+    if (swatchEl) swatchEl.style.backgroundColor = color;
+
+    // Update hex input in tree
+    const hexInput = document.getElementById(`base-color-hex-input-${containerId}`);
+    if (hexInput && hexInput !== document.activeElement) hexInput.value = color;
+
+    renderBuilderPreview();
+  }
+}
+
 // =====================================================================
 // DISCOHOOK CUSTOM COLOR PICKER LOGIC (Hex 37373D as Primary Default)
 // =====================================================================
 
 const DEFAULT_DISCOHOOK_COLOR = '#37373D';
-let activeColorPickerContainerId = null;
+let activeColorPickerTarget = { containerId: null, field: 'sidebarColor' };
 let pickerHue = 240;
 let pickerSat = 0.10;
 let pickerVal = 0.24;
@@ -1902,13 +1942,13 @@ function hsvToRgb(h, s, v) {
   };
 }
 
-// Open Color Picker for a specific container
-function openCustomColorPicker(containerId, event) {
+// Open Color Picker for a specific container and field
+function openCustomColorPicker(containerId, field = 'sidebarColor', event) {
   if (event) event.stopPropagation();
-  activeColorPickerContainerId = containerId;
+  activeColorPickerTarget = { containerId, field };
 
   const container = builderState.items.find(i => i.id === containerId);
-  const currentColor = (container && container.sidebarColor) ? container.sidebarColor : DEFAULT_DISCOHOOK_COLOR;
+  const currentColor = (container && container[field]) ? container[field] : DEFAULT_DISCOHOOK_COLOR;
 
   // Set internal HSV state from current color
   const rgb = hexToRgb(currentColor);
@@ -1997,8 +2037,8 @@ function initPickerBoxEvents() {
     const rgb = hsvToRgb(pickerHue, pickerSat, pickerVal);
     const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
 
-    if (activeColorPickerContainerId) {
-      applyColorToContainer(activeColorPickerContainerId, hex);
+    if (activeColorPickerTarget.containerId) {
+      applyColorToContainer(activeColorPickerTarget.containerId, hex);
     }
     syncColorPickerUi(hex);
   }
@@ -2025,8 +2065,8 @@ function handleHueSliderInput(val) {
   const rgb = hsvToRgb(pickerHue, pickerSat, pickerVal);
   const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
 
-  if (activeColorPickerContainerId) {
-    applyColorToContainer(activeColorPickerContainerId, hex);
+  if (activeColorPickerTarget.containerId) {
+    applyColorToContainer(activeColorPickerTarget.containerId, hex);
   }
   syncColorPickerUi(hex);
 }
@@ -2044,8 +2084,8 @@ function handlePickerHexChange(val) {
   pickerSat = hsv.s;
   pickerVal = hsv.v;
 
-  if (activeColorPickerContainerId) {
-    applyColorToContainer(activeColorPickerContainerId, hex);
+  if (activeColorPickerTarget.containerId) {
+    applyColorToContainer(activeColorPickerTarget.containerId, hex);
   }
   syncColorPickerUi(hex);
 }
@@ -2062,8 +2102,8 @@ function handlePickerRgbChange() {
   pickerSat = hsv.s;
   pickerVal = hsv.v;
 
-  if (activeColorPickerContainerId) {
-    applyColorToContainer(activeColorPickerContainerId, hex);
+  if (activeColorPickerTarget.containerId) {
+    applyColorToContainer(activeColorPickerTarget.containerId, hex);
   }
   syncColorPickerUi(hex);
 }
@@ -2076,8 +2116,8 @@ function setPickerColor(hex) {
   pickerSat = hsv.s;
   pickerVal = hsv.v;
 
-  if (activeColorPickerContainerId) {
-    applyColorToContainer(activeColorPickerContainerId, hex);
+  if (activeColorPickerTarget.containerId) {
+    applyColorToContainer(activeColorPickerTarget.containerId, hex);
   }
   syncColorPickerUi(hex);
 }
@@ -2090,23 +2130,28 @@ function resetPickerToDefault() {
 // Apply color update to container, card left border, swatch, input, and live preview
 function applyColorToContainer(containerId, color) {
   const container = builderState.items.find(i => i.id === containerId);
-  if (container) {
-    container.sidebarColor = color;
-    
-    // Card border
-    const cardEl = document.getElementById(`item-${containerId}`);
-    if (cardEl) cardEl.style.borderLeft = `4px solid ${color}`;
+  if (!container) return;
 
-    // Swatch box
+  const field = activeColorPickerTarget.field || 'sidebarColor';
+  container[field] = color;
+
+  const cardEl = document.getElementById(`item-${containerId}`);
+
+  if (field === 'baseColor') {
+    if (cardEl) cardEl.style.backgroundColor = color;
+    const swatchEl = document.getElementById(`base-color-swatch-box-${containerId}`);
+    if (swatchEl) swatchEl.style.backgroundColor = color;
+    const hexInput = document.getElementById(`base-color-hex-input-${containerId}`);
+    if (hexInput && hexInput !== document.activeElement) hexInput.value = color;
+  } else {
+    if (cardEl) cardEl.style.borderLeft = `4px solid ${color}`;
     const swatchEl = document.getElementById(`color-swatch-box-${containerId}`);
     if (swatchEl) swatchEl.style.backgroundColor = color;
-
-    // Hex input
     const hexInput = document.getElementById(`color-hex-input-${containerId}`);
     if (hexInput && hexInput !== document.activeElement) hexInput.value = color;
-
-    renderBuilderPreview();
   }
+
+  renderBuilderPreview();
 }
 
 function updateContainerSpoiler(containerId, isSpoiler) {
