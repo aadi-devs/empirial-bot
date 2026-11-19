@@ -18,7 +18,7 @@ async function authFetch(url, options = {}) {
   const response = await fetch(url, { ...options, headers, credentials: 'include' });
   if (response.status === 401 || response.status === 403) {
     localStorage.removeItem('empirial_session');
-    window.location.href = '/login.html';
+    window.location.href = '/login';
     throw new Error('Unauthorized');
   }
   return response;
@@ -30,7 +30,7 @@ async function logout() {
   try {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
   } catch (_) {}
-  window.location.href = '/login.html';
+  window.location.href = '/login';
 }
 
 // Toast System
@@ -701,7 +701,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = await res.json();
     if (!data.authenticated || !data.user || !data.user.isAdmin) {
       localStorage.removeItem('empirial_session');
-      window.location.href = '/login.html';
+      window.location.href = '/login';
       return;
     }
 
@@ -720,7 +720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSocket();
     loadDashboardData();
   } catch (err) {
-    window.location.href = '/login.html';
+    window.location.href = '/login';
   }
 
   // Search input on All tickets

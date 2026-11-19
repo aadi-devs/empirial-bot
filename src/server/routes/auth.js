@@ -169,7 +169,7 @@ router.get('/discord/callback', async (req, res) => {
   const { code, error } = req.query;
 
   if (error) {
-    return res.redirect(`/login.html?error=${encodeURIComponent(error)}`);
+    return res.redirect(`/login?error=${encodeURIComponent(error)}`);
   }
 
   // If code is present and CLIENT_SECRET is configured, exchange code directly on backend
@@ -205,7 +205,7 @@ router.get('/discord/callback', async (req, res) => {
       return res.redirect(authResult.redirect);
     } catch (err) {
       console.error('[Discord OAuth Callback Error]', err);
-      return res.redirect('/login.html?error=auth_failed');
+      return res.redirect('/login?error=auth_failed');
     }
   }
 
@@ -240,7 +240,7 @@ router.get('/discord/callback', async (req, res) => {
       const code = searchParams.get('code');
 
       if (!token && !code) {
-        window.location.href = '/login.html?error=no_token';
+        window.location.href = '/login?error=no_token';
         return;
       }
 
@@ -258,10 +258,10 @@ router.get('/discord/callback', async (req, res) => {
         if (data.redirect) {
           window.location.href = data.redirect;
         } else {
-          window.location.href = '/login.html?error=unknown';
+          window.location.href = '/login?error=unknown';
         }
       } catch (err) {
-        window.location.href = '/login.html?error=network';
+        window.location.href = '/login?error=network';
       }
     })();
   </script>
@@ -300,7 +300,7 @@ async function verifyAndCreateSession(accessToken, res) {
     });
     return {
       success: false,
-      redirect: `/access-denied.html?${query.toString()}`
+      redirect: `/access-denied?${query.toString()}`
     };
   }
 
@@ -360,7 +360,7 @@ router.post('/discord/verify-token', async (req, res) => {
       });
 
       if (!tokenRes.ok) {
-        return res.status(400).json({ error: 'Failed to exchange code', redirect: '/login.html?error=code_exchange' });
+        return res.status(400).json({ error: 'Failed to exchange code', redirect: '/login?error=code_exchange' });
       }
 
       const tokenData = await tokenRes.json();
@@ -368,14 +368,14 @@ router.post('/discord/verify-token', async (req, res) => {
     }
 
     if (!accessToken) {
-      return res.status(400).json({ error: 'Missing access token', redirect: '/login.html?error=missing_token' });
+      return res.status(400).json({ error: 'Missing access token', redirect: '/login?error=missing_token' });
     }
 
     const authResult = await verifyAndCreateSession(accessToken, res);
     return res.json(authResult);
   } catch (err) {
     console.error('[verify-token Error]', err);
-    return res.status(500).json({ error: err.message, redirect: '/login.html?error=server_error' });
+    return res.status(500).json({ error: err.message, redirect: '/login?error=server_error' });
   }
 });
 
@@ -393,10 +393,10 @@ router.post('/logout', async (req, res) => {
     }
 
     res.clearCookie('empirial_session');
-    return res.json({ success: true, redirect: '/login.html' });
+    return res.json({ success: true, redirect: '/login' });
   } catch (err) {
     res.clearCookie('empirial_session');
-    return res.json({ success: true, redirect: '/login.html' });
+    return res.json({ success: true, redirect: '/login' });
   }
 });
 

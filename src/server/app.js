@@ -29,6 +29,36 @@ function createServer(discordClient) {
 
   // Static Assets (Dashboard UI)
   const publicDir = path.join(__dirname, '..', 'public');
+
+  // Professional Clean URLs
+  app.get('/login', (req, res) => {
+    res.sendFile(path.join(publicDir, 'login.html'));
+  });
+
+  app.get('/access-denied', (req, res) => {
+    res.sendFile(path.join(publicDir, 'access-denied.html'));
+  });
+
+  app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'));
+  });
+
+  // Redirect legacy .html to clean URLs
+  app.get('/login.html', (req, res) => {
+    const query = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    res.redirect(301, `/login${query}`);
+  });
+
+  app.get('/access-denied.html', (req, res) => {
+    const query = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    res.redirect(301, `/access-denied${query}`);
+  });
+
+  app.get('/index.html', (req, res) => {
+    const query = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    res.redirect(301, `/${query}`);
+  });
+
   app.use(express.static(publicDir));
 
   // Serve saved transcripts directly for viewer
