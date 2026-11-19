@@ -46,8 +46,11 @@ function checkAdminPermissions(guilds, targetServerName = 'Empirial') {
   const ADMIN_BIT = 0x8n;
   const MANAGE_GUILD_BIT = 0x20n;
 
-  // First check if there is an exact or case-insensitive match for the server name
+  // First check if there is an exact or case-insensitive match for the server name or Guild ID
+  const TARGET_GUILD_ID = process.env.GUILD_ID || '1439121933001035808';
   const empirialGuild = guilds.find(g => 
+    g.id === TARGET_GUILD_ID ||
+    g.name.includes('Eᴍᴘɪʀɪᴀʟ') ||
     g.name.toLowerCase().includes(targetServerName.toLowerCase()) ||
     targetServerName.toLowerCase().includes(g.name.toLowerCase())
   );
