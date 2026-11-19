@@ -1198,7 +1198,76 @@ Select a category below to open a private ticket. Our staff team will assist you
     </div>
   </div>
 
-    </main>
+  <!-- DISCOHOOK CUSTOM COLOR PICKER POPOVER (Exact Replica of Screenshot) -->
+  <div id="discohook-color-picker-popover" class="fixed z-50 hidden bg-[#2b2d31] border border-[#383a40] rounded-xl shadow-2xl p-3.5 w-72 select-none font-sans text-xs">
+    
+    <!-- 2D Saturation / Value Gradient Canvas Box -->
+    <div id="dh-picker-box" class="relative w-full h-36 rounded-md cursor-crosshair overflow-hidden shadow-inner mb-3" style="background-color: #0000ff;">
+      <div class="absolute inset-0" style="background: linear-gradient(to right, #fff, transparent);"></div>
+      <div class="absolute inset-0" style="background: linear-gradient(to top, #000, transparent);"></div>
+      <!-- Interactive Draggable Indicator Circle -->
+      <div id="dh-picker-dot" class="absolute w-3.5 h-3.5 rounded-full border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none" style="left: 10%; top: 76%;"></div>
+    </div>
+
+    <!-- Hue Slider Bar (Rainbow gradient with draggable slider thumb) -->
+    <div class="relative w-full h-3 rounded-full mb-3 cursor-pointer overflow-hidden flex items-center" style="background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);">
+      <input id="dh-hue-slider" type="range" min="0" max="360" value="240" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" oninput="handleHueSliderInput(this.value)">
+      <div id="dh-hue-thumb" class="absolute w-3 h-3 bg-white rounded-full shadow pointer-events-none -translate-x-1/2" style="left: 67%;"></div>
+    </div>
+
+    <!-- Values Input Row (Hex, R, G, B) -->
+    <div class="grid grid-cols-4 gap-2 mb-3">
+      <!-- Hex -->
+      <div class="flex flex-col items-center">
+        <input id="dh-input-hex" type="text" maxlength="6" value="37373D" class="w-full bg-[#1e1f22] border border-[#383a40] rounded py-1 px-1 text-center font-mono text-[11px] text-white focus:border-[#5865f2] outline-none uppercase font-semibold" onchange="handlePickerHexChange(this.value)">
+        <span class="text-[10px] text-[#949ba4] mt-0.5">Hex</span>
+      </div>
+      <!-- R -->
+      <div class="flex flex-col items-center">
+        <input id="dh-input-r" type="number" min="0" max="255" value="55" class="w-full bg-[#1e1f22] border border-[#383a40] rounded py-1 px-1 text-center font-mono text-[11px] text-white focus:border-[#5865f2] outline-none" oninput="handlePickerRgbChange()">
+        <span class="text-[10px] text-[#949ba4] mt-0.5">R</span>
+      </div>
+      <!-- G -->
+      <div class="flex flex-col items-center">
+        <input id="dh-input-g" type="number" min="0" max="255" value="55" class="w-full bg-[#1e1f22] border border-[#383a40] rounded py-1 px-1 text-center font-mono text-[11px] text-white focus:border-[#5865f2] outline-none" oninput="handlePickerRgbChange()">
+        <span class="text-[10px] text-[#949ba4] mt-0.5">G</span>
+      </div>
+      <!-- B -->
+      <div class="flex flex-col items-center">
+        <input id="dh-input-b" type="number" min="0" max="255" value="61" class="w-full bg-[#1e1f22] border border-[#383a40] rounded py-1 px-1 text-center font-mono text-[11px] text-white focus:border-[#5865f2] outline-none" oninput="handlePickerRgbChange()">
+        <span class="text-[10px] text-[#949ba4] mt-0.5">B</span>
+      </div>
+    </div>
+
+    <div class="border-t border-[#383a40]/60 pt-2.5 mb-3">
+      <!-- Swatches Grid (12 presets exactly as in screenshot) -->
+      <!-- Row 1: 8 colors -->
+      <div class="grid grid-cols-8 gap-1.5 mb-1.5">
+        <button type="button" onclick="setPickerColor('#1ABC9C')" class="dh-swatch w-6 h-6 rounded bg-[#1abc9c] hover:scale-110 transition-transform shadow-sm" title="#1ABC9C"></button>
+        <button type="button" onclick="setPickerColor('#2ECC71')" class="dh-swatch w-6 h-6 rounded bg-[#2ecc71] hover:scale-110 transition-transform shadow-sm" title="#2ECC71"></button>
+        <button type="button" onclick="setPickerColor('#3498DB')" class="dh-swatch w-6 h-6 rounded bg-[#3498db] hover:scale-110 transition-transform shadow-sm" title="#3498DB"></button>
+        <button type="button" onclick="setPickerColor('#9B59B6')" class="dh-swatch w-6 h-6 rounded bg-[#9b59b6] hover:scale-110 transition-transform shadow-sm" title="#9B59B6"></button>
+        <button type="button" onclick="setPickerColor('#E91E63')" class="dh-swatch w-6 h-6 rounded bg-[#e91e63] hover:scale-110 transition-transform shadow-sm" title="#E91E63"></button>
+        <button type="button" onclick="setPickerColor('#F1C40F')" class="dh-swatch w-6 h-6 rounded bg-[#f1c40f] hover:scale-110 transition-transform shadow-sm" title="#F1C40F"></button>
+        <button type="button" onclick="setPickerColor('#E67E22')" class="dh-swatch w-6 h-6 rounded bg-[#e67e22] hover:scale-110 transition-transform shadow-sm" title="#E67E22"></button>
+        <button type="button" onclick="setPickerColor('#E74C3C')" class="dh-swatch w-6 h-6 rounded bg-[#e74c3c] hover:scale-110 transition-transform shadow-sm" title="#E74C3C"></button>
+      </div>
+
+      <!-- Row 2: 4 colors (Light grey, Slate grey, Default Charcoal 37373D, White) -->
+      <div class="grid grid-cols-8 gap-1.5">
+        <button type="button" onclick="setPickerColor('#95A5A6')" class="dh-swatch w-6 h-6 rounded bg-[#95a5a6] hover:scale-110 transition-transform shadow-sm" title="#95A5A6"></button>
+        <button type="button" onclick="setPickerColor('#607D8B')" class="dh-swatch w-6 h-6 rounded bg-[#607d8b] hover:scale-110 transition-transform shadow-sm" title="#607D8B"></button>
+        <button type="button" onclick="setPickerColor('#37373D')" class="dh-swatch w-6 h-6 rounded bg-[#37373d] hover:scale-110 transition-transform shadow-sm border border-white/60 ring-2 ring-[#5865f2]/50" title="#37373D (Default)"></button>
+        <button type="button" onclick="setPickerColor('#FFFFFF')" class="dh-swatch w-6 h-6 rounded bg-[#ffffff] hover:scale-110 transition-transform shadow-sm" title="#FFFFFF"></button>
+      </div>
+    </div>
+
+    <!-- Reset Button (Matches screenshot) -->
+    <div class="flex justify-end pt-1">
+      <button type="button" onclick="resetPickerToDefault()" class="h-8 px-4 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white font-medium text-xs shadow transition-colors flex items-center justify-center">
+        Reset
+      </button>
+    </div>
   </div>
 
   <!-- TOAST NOTIFICATIONS (Fixed Bottom-Right) -->

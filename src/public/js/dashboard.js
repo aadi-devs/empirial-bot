@@ -830,7 +830,7 @@ const defaultDiscohookState = {
       id: "container_1",
       type: "container",
       collapsed: false,
-      sidebarColor: "#58b9ff",
+      sidebarColor: "#37373d",
       spoiler: false,
       texts: [
         {
@@ -851,7 +851,7 @@ const defaultDiscohookState = {
       id: "container_2",
       type: "container",
       collapsed: false,
-      sidebarColor: "#58b9ff",
+      sidebarColor: "#37373d",
       spoiler: false,
       texts: [
         {
@@ -904,6 +904,7 @@ async function initBuilder() {
   if (!builderInitialized) {
     builderInitialized = true;
     setupBuilderClickOutside();
+    initPickerBoxEvents();
   }
 
   // Load Channels from Bot Gateway
@@ -971,6 +972,14 @@ function updatePreviewHeaderChannel() {
 // Global click outside to close menus
 function setupBuilderClickOutside() {
   document.addEventListener('click', (e) => {
+    // Close Custom Color Picker if clicking outside
+    const picker = document.getElementById('discohook-color-picker-popover');
+    if (picker && !picker.classList.contains('hidden')) {
+      if (!picker.contains(e.target) && !e.target.closest('[id^="color-swatch-box-"]')) {
+        picker.classList.add('hidden');
+      }
+    }
+
     const addMenu = document.getElementById('add-menu-popover');
     const addBtn = document.getElementById('btn-add-main');
     if (addMenu && !addMenu.classList.contains('hidden')) {
@@ -1146,7 +1155,7 @@ function createContentTreeItem(item, index) {
 // 2. Container Item Component (Components v2 / Embed)
 function createContainerTreeItem(item, index) {
   const div = document.createElement('div');
-  const sidebarColor = item.sidebarColor || '#58b9ff';
+  const sidebarColor = item.sidebarColor || '#37373d';
   div.className = 'bg-[#2b2d31] rounded-md p-3 border border-[#383a40] space-y-3 font-sans transition-all';
   div.style.borderLeft = `4px solid ${sidebarColor}`;
   div.id = `item-${item.id}`;
@@ -1209,10 +1218,8 @@ function createContainerTreeItem(item, index) {
       <div>
         <label class="block text-[11px] font-medium text-[#dbdee1] mb-1">Sidebar Colour</label>
         <div class="flex items-center gap-2">
-          <input type="text" value="${sidebarColor}" class="flex-1 bg-[#1e1f22] border border-[#383a40] rounded px-3 py-1.5 text-xs text-white font-mono focus:border-[#5865f2] outline-none" oninput="updateContainerColor('${item.id}', this.value)">
-          <div class="relative w-7 h-7 rounded overflow-hidden shrink-0 border border-[#383a40] cursor-pointer" style="background-color: ${sidebarColor};">
-            <input type="color" value="${sidebarColor}" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" oninput="updateContainerColor('${item.id}', this.value)">
-          </div>
+          <input type="text" id="color-hex-input-${item.id}" value="${sidebarColor}" class="flex-1 bg-[#1e1f22] border border-[#383a40] rounded px-3 py-1.5 text-xs text-white font-mono focus:border-[#5865f2] outline-none uppercase font-semibold" oninput="updateContainerColor('${item.id}', this.value)">
+          <div id="color-swatch-box-${item.id}" onclick="openCustomColorPicker('${item.id}', event)" class="w-7 h-7 rounded overflow-hidden shrink-0 border border-[#383a40] cursor-pointer shadow-sm hover:scale-105 transition-transform" style="background-color: ${sidebarColor};" title="Click to open Discohook Color Picker"></div>
         </div>
       </div>
 
@@ -1628,7 +1635,7 @@ function addBuilderItem(type) {
       id,
       type: 'container',
       collapsed: false,
-      sidebarColor: '#58b9ff',
+      sidebarColor: '#37373d',
       spoiler: false,
       texts: [
         {
@@ -1802,10 +1809,302 @@ function updateContainerText(containerId, textId, value) {
 function updateContainerColor(containerId, color) {
   const container = builderState.items.find(i => i.id === containerId);
   if (container) {
+    if (!color.startsWith('#') && /^[0-9A-Fa-f]{3,6}$/.test(color)) {
+      color = `#${color}`;
+    }
     container.sidebarColor = color;
-    // update card border live
+    
+    // Update container left border in tree
     const cardEl = document.getElementById(`item-${containerId}`);
     if (cardEl) cardEl.style.borderLeft = `4px solid ${color}`;
+    
+    // Update container color swatch box in tree
+    const swatchEl = document.getElementById(`color-swatch-box-${containerId}`);
+    if (swatchEl) swatchEl.style.backgroundColor = color;
+
+    // Update hex input in tree
+    const hexInput = document.getElementById(`color-hex-input-${containerId}`);
+    if (hexInput && hexInput !== document.activeElement) hexInput.value = color;
+
+    renderBuilderPreview();
+  }
+}
+
+// =====================================================================
+// DISCOHOOK CUSTOM COLOR PICKER LOGIC (Hex 37373D as Primary Default)
+// =====================================================================
+
+const DEFAULT_DISCOHOOK_COLOR = '#37373D';
+let activeColorPickerContainerId = null;
+let pickerHue = 240;
+let pickerSat = 0.10;
+let pickerVal = 0.24;
+let isDraggingPickerBox = false;
+
+function hexToRgb(hex) {
+  if (!hex) return { r: 55, g: 55, b: 61 };
+  hex = hex.replace('#', '').trim();
+  if (hex.length === 3) {
+    hex = hex.split('').map(c => c + c).join('');
+  }
+  const num = parseInt(hex, 16);
+  if (isNaN(num) || hex.length !== 6) return { r: 55, g: 55, b: 61 };
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255
+  };
+}
+
+function rgbToHex(r, g, b) {
+  const toHex = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0').toUpperCase();
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function rgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, v = max;
+  const d = max - min;
+  s = max === 0 ? 0 : d / max;
+  if (max === min) {
+    h = 0;
+  } else {
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return { h: h * 360, s, v };
+}
+
+function hsvToRgb(h, s, v) {
+  let r, g, b;
+  const i = Math.floor((h / 60) % 6);
+  const f = (h / 60) - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  switch (i) {
+    case 0: r = v; g = t; b = p; break;
+    case 1: r = q; g = v; b = p; break;
+    case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = q; b = v; break;
+    case 4: r = t; g = p; b = v; break;
+    case 5: r = v; g = p; b = q; break;
+  }
+  return {
+    r: Math.round(r * 255),
+    g: Math.round(g * 255),
+    b: Math.round(b * 255)
+  };
+}
+
+// Open Color Picker for a specific container
+function openCustomColorPicker(containerId, event) {
+  if (event) event.stopPropagation();
+  activeColorPickerContainerId = containerId;
+
+  const container = builderState.items.find(i => i.id === containerId);
+  const currentColor = (container && container.sidebarColor) ? container.sidebarColor : DEFAULT_DISCOHOOK_COLOR;
+
+  // Set internal HSV state from current color
+  const rgb = hexToRgb(currentColor);
+  const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+  pickerHue = hsv.h;
+  pickerSat = hsv.s;
+  pickerVal = hsv.v;
+
+  syncColorPickerUi(currentColor);
+
+  // Position the popover right next to or below the trigger
+  const popover = document.getElementById('discohook-color-picker-popover');
+  if (popover && event && event.currentTarget) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    let top = rect.bottom + 8;
+    let left = rect.left - 210;
+
+    if (top + 380 > window.innerHeight) {
+      top = Math.max(10, rect.top - 380);
+    }
+    if (left < 10) left = 10;
+    if (left + 300 > window.innerWidth) left = window.innerWidth - 310;
+
+    popover.style.top = `${top}px`;
+    popover.style.left = `${left}px`;
+    popover.classList.remove('hidden');
+  }
+}
+
+function syncColorPickerUi(hexColor) {
+  const cleanHex = hexColor.replace('#', '').toUpperCase();
+  const rgb = hexToRgb(cleanHex);
+
+  // 1. Box background color to pure Hue
+  const box = document.getElementById('dh-picker-box');
+  if (box) box.style.backgroundColor = `hsl(${Math.round(pickerHue)}, 100%, 50%)`;
+
+  // 2. Position the dot indicator
+  const dot = document.getElementById('dh-picker-dot');
+  if (dot) {
+    dot.style.left = `${(pickerSat * 100).toFixed(1)}%`;
+    dot.style.top = `${((1 - pickerVal) * 100).toFixed(1)}%`;
+  }
+
+  // 3. Hue slider thumb
+  const hueSlider = document.getElementById('dh-hue-slider');
+  const hueThumb = document.getElementById('dh-hue-thumb');
+  if (hueSlider) hueSlider.value = Math.round(pickerHue);
+  if (hueThumb) hueThumb.style.left = `${((pickerHue / 360) * 100).toFixed(1)}%`;
+
+  // 4. Input values
+  const inputHex = document.getElementById('dh-input-hex');
+  const inputR = document.getElementById('dh-input-r');
+  const inputG = document.getElementById('dh-input-g');
+  const inputB = document.getElementById('dh-input-b');
+
+  if (inputHex && inputHex !== document.activeElement) inputHex.value = cleanHex;
+  if (inputR && inputR !== document.activeElement) inputR.value = rgb.r;
+  if (inputG && inputG !== document.activeElement) inputG.value = rgb.g;
+  if (inputB && inputB !== document.activeElement) inputB.value = rgb.b;
+
+  // 5. Highlight active swatch if matching
+  document.querySelectorAll('.dh-swatch').forEach(btn => {
+    const title = btn.getAttribute('title') || '';
+    if (title.toUpperCase().includes(cleanHex)) {
+      btn.classList.add('ring-2', 'ring-white/80', 'border', 'border-white/40');
+    } else {
+      btn.classList.remove('ring-2', 'ring-white/80', 'border', 'border-white/40');
+    }
+  });
+}
+
+// When dragging inside 2D box
+function initPickerBoxEvents() {
+  const box = document.getElementById('dh-picker-box');
+  if (!box) return;
+
+  function updateFromBox(e) {
+    const rect = box.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+    pickerSat = x / rect.width;
+    pickerVal = 1 - (y / rect.height);
+
+    const rgb = hsvToRgb(pickerHue, pickerSat, pickerVal);
+    const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+
+    if (activeColorPickerContainerId) {
+      applyColorToContainer(activeColorPickerContainerId, hex);
+    }
+    syncColorPickerUi(hex);
+  }
+
+  box.addEventListener('mousedown', (e) => {
+    isDraggingPickerBox = true;
+    updateFromBox(e);
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (isDraggingPickerBox) {
+      updateFromBox(e);
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    isDraggingPickerBox = false;
+  });
+}
+
+// Hue slider change
+function handleHueSliderInput(val) {
+  pickerHue = parseFloat(val);
+  const rgb = hsvToRgb(pickerHue, pickerSat, pickerVal);
+  const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+
+  if (activeColorPickerContainerId) {
+    applyColorToContainer(activeColorPickerContainerId, hex);
+  }
+  syncColorPickerUi(hex);
+}
+
+// Hex input change in picker
+function handlePickerHexChange(val) {
+  let clean = val.replace('#', '').trim();
+  if (clean.length === 3) clean = clean.split('').map(c => c + c).join('');
+  if (clean.length !== 6) return;
+
+  const hex = `#${clean.toUpperCase()}`;
+  const rgb = hexToRgb(hex);
+  const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+  pickerHue = hsv.h;
+  pickerSat = hsv.s;
+  pickerVal = hsv.v;
+
+  if (activeColorPickerContainerId) {
+    applyColorToContainer(activeColorPickerContainerId, hex);
+  }
+  syncColorPickerUi(hex);
+}
+
+// RGB input changes in picker
+function handlePickerRgbChange() {
+  const r = parseInt(document.getElementById('dh-input-r')?.value) || 0;
+  const g = parseInt(document.getElementById('dh-input-g')?.value) || 0;
+  const b = parseInt(document.getElementById('dh-input-b')?.value) || 0;
+
+  const hex = rgbToHex(r, g, b);
+  const hsv = rgbToHsv(r, g, b);
+  pickerHue = hsv.h;
+  pickerSat = hsv.s;
+  pickerVal = hsv.v;
+
+  if (activeColorPickerContainerId) {
+    applyColorToContainer(activeColorPickerContainerId, hex);
+  }
+  syncColorPickerUi(hex);
+}
+
+// Palette swatch clicked
+function setPickerColor(hex) {
+  const rgb = hexToRgb(hex);
+  const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+  pickerHue = hsv.h;
+  pickerSat = hsv.s;
+  pickerVal = hsv.v;
+
+  if (activeColorPickerContainerId) {
+    applyColorToContainer(activeColorPickerContainerId, hex);
+  }
+  syncColorPickerUi(hex);
+}
+
+// Reset button clicked -> sets to main default #37373D!
+function resetPickerToDefault() {
+  setPickerColor(DEFAULT_DISCOHOOK_COLOR);
+}
+
+// Apply color update to container, card left border, swatch, input, and live preview
+function applyColorToContainer(containerId, color) {
+  const container = builderState.items.find(i => i.id === containerId);
+  if (container) {
+    container.sidebarColor = color;
+    
+    // Card border
+    const cardEl = document.getElementById(`item-${containerId}`);
+    if (cardEl) cardEl.style.borderLeft = `4px solid ${color}`;
+
+    // Swatch box
+    const swatchEl = document.getElementById(`color-swatch-box-${containerId}`);
+    if (swatchEl) swatchEl.style.backgroundColor = color;
+
+    // Hex input
+    const hexInput = document.getElementById(`color-hex-input-${containerId}`);
+    if (hexInput && hexInput !== document.activeElement) hexInput.value = color;
+
     renderBuilderPreview();
   }
 }
@@ -2106,7 +2405,7 @@ function applyImportedJson() {
       }
       if (Array.isArray(parsed.embeds)) {
         parsed.embeds.forEach((e, idx) => {
-          let hexColor = '#58b9ff';
+          let hexColor = '#37373d';
           if (e.color) {
             hexColor = '#' + e.color.toString(16).padStart(6, '0');
           }

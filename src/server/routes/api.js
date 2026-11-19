@@ -434,15 +434,15 @@ module.exports = function(client, io) {
       for (const container of containers) {
         const embed = new EmbedBuilder();
         
-        // Color
+        // Color (Default Discohook Embed Charcoal: #37373d)
         if (container.sidebarColor) {
           try {
             embed.setColor(container.sidebarColor);
           } catch (_) {
-            embed.setColor('#58b9ff');
+            embed.setColor('#37373d');
           }
         } else {
-          embed.setColor('#58b9ff');
+          embed.setColor('#37373d');
         }
 
         // Texts inside container
