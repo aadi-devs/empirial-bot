@@ -285,6 +285,7 @@
       document.getElementById('logout-btn')?.addEventListener('click', async function() {
         this.classList.add('opacity-70');
         this.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>Logging out...</span>';
+        localStorage.removeItem('empirial_session');
         try {
           await fetch('/api/auth/logout', { method: 'POST' });
         } catch (_) {}

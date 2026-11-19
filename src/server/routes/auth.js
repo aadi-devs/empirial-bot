@@ -137,9 +137,14 @@ router.get('/status', async (req, res) => {
  * Initiates Discord OAuth2
  */
 router.get('/discord/login', (req, res) => {
-  const host = req.get('host');
-  const protocol = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
-  const redirectUri = process.env.DISCORD_REDIRECT_URI || `${protocol}://${host}/api/auth/discord/callback`;
+  const host = req.get('host') || '';
+  let redirectUri;
+  if (host.includes('localhost') || host.includes('127.0.0.1')) {
+    redirectUri = `http://${host}/api/auth/discord/callback`;
+  } else {
+    // Standard whitelisted redirect URI in Discord Developer Portal
+    redirectUri = process.env.DISCORD_REDIRECT_URI || 'https://empirial-bot-nu.vercel.app/api/auth/discord/callback';
+  }
 
   const promptParam = req.query.prompt ? `&prompt=${encodeURIComponent(req.query.prompt)}` : '';
 
@@ -242,6 +247,9 @@ router.get('/discord/callback', async (req, res) => {
           body: JSON.stringify({ token, code })
         });
         const data = await res.json();
+        if (data.sessionId) {
+          localStorage.setItem('empirial_session', data.sessionId);
+        }
         if (data.redirect) {
           window.location.href = data.redirect;
         } else {

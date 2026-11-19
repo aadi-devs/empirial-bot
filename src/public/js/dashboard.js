@@ -6,15 +6,18 @@ let allTicketsCache = [];
 let socket = null;
 let currentUser = null;
 
-// Authenticated Fetch using Supabase cookie-based session
+// Authenticated Fetch using Supabase session (Cookie + Authorization Bearer)
 async function authFetch(url, options = {}) {
+  const sessionToken = localStorage.getItem('empirial_session');
   const headers = {
     'Content-Type': 'application/json',
+    ...(sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {}),
     ...(options.headers || {})
   };
 
   const response = await fetch(url, { ...options, headers, credentials: 'include' });
   if (response.status === 401 || response.status === 403) {
+    localStorage.removeItem('empirial_session');
     window.location.href = '/login.html';
     throw new Error('Unauthorized');
   }
@@ -23,6 +26,7 @@ async function authFetch(url, options = {}) {
 
 // Log out user
 async function logout() {
+  localStorage.removeItem('empirial_session');
   try {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
   } catch (_) {}
@@ -619,9 +623,12 @@ function escapeHtml(str) {
 // DOM Ready
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    const sessionToken = localStorage.getItem('empirial_session');
+    const headers = sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {};
+    const res = await fetch('/api/auth/me', { headers, credentials: 'include' });
     const data = await res.json();
     if (!data.authenticated || !data.user || !data.user.isAdmin) {
+      localStorage.removeItem('empirial_session');
       window.location.href = '/login.html';
       return;
     }
