@@ -57,3 +57,7 @@ process.on('SIGINT', () => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('[System] Unhandled Rejection:', reason);
 });
+
+process.on('uncaughtException', (err) => {
+  console.error('[System] Uncaught Exception:', err);
+});
