@@ -29,9 +29,7 @@ function createServer(discordClient) {
   app.use(express.urlencoded({ extended: true }));
 
   // Static Assets (Dashboard UI)
-  const rootPublicDir = path.join(__dirname, '..', '..', 'public');
-  const srcPublicDir = path.join(__dirname, '..', 'public');
-  const publicDir = fs.existsSync(rootPublicDir) ? rootPublicDir : srcPublicDir;
+  const publicDir = path.join(__dirname, '..', 'public');
 
   // Professional Clean URLs
   app.get('/login', (req, res) => {
