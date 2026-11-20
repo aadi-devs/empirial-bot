@@ -47,12 +47,17 @@ discordClient.login(token).catch(err => {
   }
 });
 
-// Graceful shutdown handling
-process.on('SIGINT', () => {
+// Graceful shutdown handling for local and Vercel Daemons
+const handleShutdown = () => {
   console.log('\n[System] Gracefully shutting down Empirial bot & server...');
-  discordClient.destroy();
+  try {
+    discordClient.destroy();
+  } catch (_) {}
   process.exit(0);
-});
+};
+
+process.on('SIGINT', handleShutdown);
+process.on('SIGTERM', handleShutdown);
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('[System] Unhandled Rejection:', reason);
